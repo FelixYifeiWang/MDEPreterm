@@ -769,10 +769,27 @@
                 currentRepo.textContent = `Analyzed ${analyzedRepos} repositories with ${totalCommits.toLocaleString()} total commits`;
                 
                 // Show visualizations after data is loaded
-                const vizSection = document.getElementById('visualizationSection');
-                if (allCommitData.length > 0 && vizSection) {
-                    vizSection.style.display = 'block';
-                    showVisualization('calendar');
+                console.log('Commit data loaded:', allCommitData.length, 'repos with commits');
+                
+                if (allCommitData.length > 0) {
+                    console.log('Showing visualizations...');
+                    // Update the placeholder and show the actual visualization
+                    setTimeout(() => {
+                        showVisualization('calendar');
+                    }, 500);
+                } else {
+                    console.warn('No commit data found to visualize');
+                    const vizContent = document.getElementById('vizContent');
+                    if (vizContent) {
+                        vizContent.innerHTML = `
+                            <div style="text-align: center; padding: 60px; color: #7d8590;">
+                                <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+                                <div style="font-size: 18px; margin-bottom: 8px;">No Commit Data Found</div>
+                                <div style="font-size: 14px;">We analyzed ${analyzedRepos} repositories but found no commits by your username.</div>
+                                <div style="font-size: 12px; margin-top: 8px; color: #da3633;">This might happen if all your repos are private and your token only has public access.</div>
+                            </div>
+                        `;
+                    }
                 }
                 
             } catch (error) {
@@ -997,36 +1014,66 @@
             
             // Update active button
             document.querySelectorAll('.viz-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            event?.target?.classList?.add('active') || document.querySelector(`[onclick="showVisualization('${type}')"]`)?.classList?.add('active');
             
             const vizContent = document.getElementById('vizContent');
             const vizTitle = document.getElementById('vizTitle');
+            
+            if (!vizContent || !vizTitle) {
+                console.error('Visualization elements not found');
+                return;
+            }
+            
+            // Check if we have data
+            if (allCommitData.length === 0) {
+                vizContent.innerHTML = `
+                    <div style="text-align: center; padding: 60px; color: #7d8590;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
+                        <div style="font-size: 18px; margin-bottom: 8px;">No Data Yet</div>
+                        <div style="font-size: 14px;">Complete the commit analysis above to see your visualizations!</div>
+                    </div>
+                `;
+                vizTitle.textContent = 'Waiting for Data...';
+                return;
+            }
             
             // Clear previous visualization
             vizContent.innerHTML = '';
             
             // Show new visualization
-            switch(type) {
-                case 'calendar':
-                    vizTitle.textContent = 'Commit Calendar - Your coding activity over time';
-                    createCommitCalendar();
-                    break;
-                case 'timeline':
-                    vizTitle.textContent = 'Timeline - Commits over time by repository';
-                    createTimeline();
-                    break;
-                case 'bubbles':
-                    vizTitle.textContent = 'Repository Bubbles - Size represents commit count';
-                    createBubbleChart();
-                    break;
-                case 'heatmap':
-                    vizTitle.textContent = 'Time Patterns - When you code most';
-                    createHeatmap();
-                    break;
-                case 'river':
-                    vizTitle.textContent = 'Commit River - Flow of activity across repositories';
-                    createRiverChart();
-                    break;
+            try {
+                switch(type) {
+                    case 'calendar':
+                        vizTitle.textContent = 'Commit Calendar - Your coding activity over time';
+                        createCommitCalendar();
+                        break;
+                    case 'timeline':
+                        vizTitle.textContent = 'Timeline - Commits over time by repository';
+                        createTimeline();
+                        break;
+                    case 'bubbles':
+                        vizTitle.textContent = 'Repository Bubbles - Size represents commit count';
+                        createBubbleChart();
+                        break;
+                    case 'heatmap':
+                        vizTitle.textContent = 'Time Patterns - When you code most';
+                        createHeatmap();
+                        break;
+                    case 'river':
+                        vizTitle.textContent = 'Commit River - Flow of activity across repositories';
+                        createRiverChart();
+                        break;
+                    default:
+                        vizContent.innerHTML = '<div style="text-align: center; padding: 60px; color: #7d8590;">Unknown visualization type</div>';
+                }
+            } catch (error) {
+                console.error('Visualization error:', error);
+                vizContent.innerHTML = `
+                    <div style="text-align: center; padding: 60px; color: #da3633;">
+                        <div style="font-size: 18px; margin-bottom: 8px;">Visualization Error</div>
+                        <div style="font-size: 14px;">${error.message}</div>
+                    </div>
+                `;
             }
         }
 
@@ -1372,9 +1419,25 @@
             
             // Clear UI
             document.getElementById('commitDataContainer').innerHTML = '';
-            document.getElementById('visualizationSection').style.display = 'none';
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
+            
+            // Reset visualization
+            const vizContent = document.getElementById('vizContent');
+            if (vizContent) {
+                vizContent.innerHTML = `
+                    <div style="text-align: center; padding: 60px; color: #7d8590;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+                        <div style="font-size: 18px; margin-bottom: 8px;">Visualizations Loading...</div>
+                        <div style="font-size: 14px;">Complete the analysis above to see your commit visualizations!</div>
+                    </div>
+                `;
+            }
+            
+            const vizTitle = document.getElementById('vizTitle');
+            if (vizTitle) {
+                vizTitle.textContent = 'Interactive Visualizations';
+            }
             
             // Reset counters
             document.getElementById('totalCommits').textContent = '0';
