@@ -773,10 +773,8 @@
                 
                 if (allCommitData.length > 0) {
                     console.log('Showing visualizations...');
-                    // Update the placeholder and show the actual visualization
-                    setTimeout(() => {
-                        showVisualization('calendar');
-                    }, 500);
+                    // Trigger visualization immediately
+                    showVisualization('calendar');
                 } else {
                     console.warn('No commit data found to visualize');
                     const vizContent = document.getElementById('vizContent');
@@ -1012,15 +1010,25 @@
         function showVisualization(type) {
             currentVisualization = type;
             
+            console.log('showVisualization called with type:', type);
+            console.log('allCommitData length:', allCommitData.length);
+            
             // Update active button
             document.querySelectorAll('.viz-btn').forEach(btn => btn.classList.remove('active'));
-            event?.target?.classList?.add('active') || document.querySelector(`[onclick="showVisualization('${type}')"]`)?.classList?.add('active');
+            const targetBtn = document.querySelector(`[onclick="showVisualization('${type}')"]`);
+            if (targetBtn) targetBtn.classList.add('active');
             
             const vizContent = document.getElementById('vizContent');
             const vizTitle = document.getElementById('vizTitle');
             
+            console.log('vizContent found:', !!vizContent);
+            console.log('vizTitle found:', !!vizTitle);
+            
             if (!vizContent || !vizTitle) {
                 console.error('Visualization elements not found');
+                // Try to find them with different selectors
+                console.log('All elements with viz-content class:', document.querySelectorAll('.viz-content'));
+                console.log('All elements with id vizContent:', document.querySelectorAll('#vizContent'));
                 return;
             }
             
@@ -1031,6 +1039,7 @@
                         <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
                         <div style="font-size: 18px; margin-bottom: 8px;">No Data Yet</div>
                         <div style="font-size: 14px;">Complete the commit analysis above to see your visualizations!</div>
+                        <button onclick="testVisualization()" style="margin-top: 16px; padding: 8px 16px; background: #1f883d; color: white; border: none; border-radius: 4px; cursor: pointer;">🔧 Test Visualizations</button>
                     </div>
                 `;
                 vizTitle.textContent = 'Waiting for Data...';
@@ -1038,7 +1047,7 @@
             }
             
             // Clear previous visualization
-            vizContent.innerHTML = '';
+            vizContent.innerHTML = '<div style="text-align: center; padding: 20px; color: #7d8590;">Loading visualization...</div>';
             
             // Show new visualization
             try {
@@ -1066,15 +1075,45 @@
                     default:
                         vizContent.innerHTML = '<div style="text-align: center; padding: 60px; color: #7d8590;">Unknown visualization type</div>';
                 }
+                console.log('Visualization created successfully');
             } catch (error) {
                 console.error('Visualization error:', error);
                 vizContent.innerHTML = `
                     <div style="text-align: center; padding: 60px; color: #da3633;">
                         <div style="font-size: 18px; margin-bottom: 8px;">Visualization Error</div>
                         <div style="font-size: 14px;">${error.message}</div>
+                        <button onclick="testVisualization()" style="margin-top: 16px; padding: 8px 16px; background: #1f883d; color: white; border: none; border-radius: 4px; cursor: pointer;">🔧 Test Visualizations</button>
                     </div>
                 `;
             }
+        }
+
+        // Test function to debug visualizations
+        function testVisualization() {
+            console.log('Testing visualization system...');
+            console.log('Current commit data:', allCommitData);
+            
+            // Create some test data if none exists
+            if (allCommitData.length === 0) {
+                console.log('Creating test data...');
+                allCommitData = [{
+                    repo: { name: 'test-repo', language: 'JavaScript' },
+                    commits: [
+                        {
+                            sha: 'abc123',
+                            commit: {
+                                message: 'Test commit',
+                                author: {
+                                    name: 'Test User',
+                                    date: new Date().toISOString()
+                                }
+                            }
+                        }
+                    ]
+                }];
+            }
+            
+            showVisualization('calendar');
         }
 
         function createCommitCalendar() {
