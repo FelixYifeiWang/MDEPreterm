@@ -379,7 +379,7 @@
                     <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
                 </svg>
             </div>
-            <h1 class="title">Sign in to GitHub Code Tracker</h1>
+            <h1 class="title">GitHub Commit Analyzer</h1>
             
             <form id="loginFormElement">
                 <div class="form-group">
@@ -390,24 +390,14 @@
                 <div class="form-group">
                     <label for="password">Personal Access Token</label>
                     <input type="password" id="password" placeholder="ghp_xxxxxxxxxxxx" required>
-                    <small style="color: #7d8590; font-size: 12px; margin-top: 4px; display: block;">
-                        Create at: GitHub Settings → Developer settings → Personal access tokens
+                    <small style="color: #7d8590; font-size: 12px; margin-top: 8px; display: block; line-height: 1.4;">
+                        🔗 <strong>Get your token:</strong> GitHub Settings → Developer settings → Personal access tokens → Generate new token<br>
+                        ✅ <strong>Required scopes:</strong> <code>repo</code>, <code>user</code>
                     </small>
                 </div>
                 
-                <button type="submit" class="btn">Analyze Commits</button>
+                <button type="submit" class="btn">🚀 Analyze My Commits</button>
             </form>
-            
-            <div class="divider">
-                <span>or</span>
-            </div>
-            
-            <button class="btn btn-github" id="githubAuth">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
-                </svg>
-                Continue with GitHub
-            </button>
         </div>
         
         <!-- Loading Screen -->
@@ -455,13 +445,6 @@
     </div>
 
     <script>
-        // GitHub OAuth configuration - REPLACE WITH YOUR VALUES
-        const GITHUB_CONFIG = {
-            clientId: 'your_github_client_id_here', // Replace with your GitHub App Client ID
-            redirectUri: window.location.origin + window.location.pathname, // Current page
-            scope: 'repo user' // Permissions we need
-        };
-
         // GitHub API configuration
         const GITHUB_API_BASE = 'https://api.github.com';
         let githubToken = null;
@@ -480,281 +463,46 @@
         const rateLimit = document.getElementById('rateLimit');
         const currentRepo = document.getElementById('currentRepo');
 
-        // Check for OAuth callback on page load
-        window.addEventListener('load', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
-            const error = urlParams.get('error');
-            
-            if (error) {
-                alert(`GitHub OAuth Error: ${error}`);
-                cleanUrl();
-            } else if (code) {
-                handleOAuthCallback(code);
-            }
-        });
-
-        // Form submission handler for token-based auth (backup method)
+        // Form submission handler for Personal Access Token authentication
         document.getElementById('loginFormElement').addEventListener('submit', function(e) {
             e.preventDefault();
-            const username = document.getElementById('username').value;
-            const token = document.getElementById('password').value;
+            const username = document.getElementById('username').value.trim();
+            const token = document.getElementById('password').value.trim();
             
-            if (username && token) {
-                githubToken = token;
-                authenticateUser(username);
-            }
-        });
-
-        // GitHub OAuth handler
-        document.getElementById('githubAuth').addEventListener('click', function() {
-            // Use Device Flow instead of OAuth redirect
-            initiateDeviceFlow();
-        });
-
-        async function initiateDeviceFlow() {
-            updateStatus('Starting GitHub Device Flow...', 'loading');
-            loginForm.style.display = 'none';
-            loading.style.display = 'block';
-
-            try {
-                // Step 1: Request device and user codes
-                const deviceResponse = await fetch('https://github.com/login/device/code', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        client_id: 'Ov23liQ5RfIX7QfnpXJ0', // Public client ID that works for device flow
-                        scope: 'repo user'
-                    })
-                });
-
-                if (!deviceResponse.ok) {
-                    throw new Error('Failed to initiate device flow');
-                }
-
-                const deviceData = await deviceResponse.json();
-                
-                // Step 2: Show user the code and URL
-                const userCode = deviceData.user_code;
-                const verificationUri = deviceData.verification_uri;
-                const deviceCode = deviceData.device_code;
-                const interval = deviceData.interval || 5;
-
-                // Update UI to show instructions
-                updateStatus(`Go to: ${verificationUri}`, 'loading');
-                currentRepo.textContent = `Enter code: ${userCode}`;
-                
-                // Show a more prominent modal/alert
-                const continueAuth = confirm(
-                    `GitHub Device Authentication\n\n` +
-                    `1. Go to: ${verificationUri}\n` +
-                    `2. Enter code: ${userCode}\n` +
-                    `3. Click OK after authorizing\n\n` +
-                    `This will open GitHub in a new tab.`
-                );
-
-                if (continueAuth) {
-                    // Open GitHub in new tab
-                    window.open(verificationUri, '_blank');
-                    
-                    // Step 3: Poll for access token
-                    await pollForAccessToken(deviceCode, interval);
-                } else {
-                    throw new Error('User cancelled authentication');
-                }
-
-            } catch (error) {
-                console.error('Device flow error:', error);
-                updateStatus(`Device flow failed: ${error.message}`, 'error');
-                setTimeout(() => {
-                    loading.style.display = 'none';
-                    loginForm.style.display = 'block';
-                }, 3000);
-            }
-        }
-
-        async function pollForAccessToken(deviceCode, interval) {
-            const maxAttempts = 100; // ~8 minutes max
-            let attempts = 0;
-
-            const poll = async () => {
-                attempts++;
-                updateStatus(`Waiting for authorization... (${attempts}/${maxAttempts})`, 'loading');
-
-                try {
-                    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: new URLSearchParams({
-                            client_id: 'Ov23liQ5RfIX7QfnpXJ0',
-                            device_code: deviceCode,
-                            grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
-                        })
-                    });
-
-                    const tokenData = await tokenResponse.json();
-
-                    if (tokenData.access_token) {
-                        // Success! We got the token
-                        githubToken = tokenData.access_token;
-                        console.log('Successfully got token via device flow');
-                        
-                        // Get user info and start analysis
-                        const userResponse = await githubApiCall('/user');
-                        currentUser = userResponse;
-                        updateUserGreeting();
-                        
-                        // Start fetching all commit data
-                        await fetchAllCommitData();
-                        
-                        loading.style.display = 'none';
-                        dashboard.style.display = 'block';
-                        
-                    } else if (tokenData.error === 'authorization_pending') {
-                        // User hasn't authorized yet, keep polling
-                        if (attempts < maxAttempts) {
-                            setTimeout(poll, interval * 1000);
-                        } else {
-                            throw new Error('Authorization timeout - please try again');
-                        }
-                        
-                    } else if (tokenData.error === 'slow_down') {
-                        // Rate limited, increase interval
-                        setTimeout(poll, (interval + 5) * 1000);
-                        
-                    } else {
-                        // Some other error
-                        throw new Error(tokenData.error_description || tokenData.error || 'Unknown error');
-                    }
-
-                } catch (error) {
-                    console.error('Token polling error:', error);
-                    throw error;
-                }
-            };
-
-            // Start polling
-            poll();
-        }
-
-        async function handleOAuthCallback(code) {
-            console.log('OAuth callback received with code:', code);
-            
-            const storedState = sessionStorage.getItem('oauth_state');
-            const urlParams = new URLSearchParams(window.location.search);
-            const returnedState = urlParams.get('state');
-            
-            console.log('Stored state:', storedState);
-            console.log('Returned state:', returnedState);
-            
-            // Verify state parameter for security
-            if (!storedState || storedState !== returnedState) {
-                alert('OAuth state verification failed. Please try again.');
-                cleanUrl();
+            if (!username || !token) {
+                alert('Please enter both username and token');
                 return;
             }
             
-            updateStatus('Exchanging OAuth code for token...', 'loading');
-            loginForm.style.display = 'none';
-            loading.style.display = 'block';
-
-            try {
-                // Exchange authorization code for access token
-                const token = await exchangeCodeForToken(code);
-                console.log('Successfully got token');
-                githubToken = token;
-                
-                // Clean up URL and storage
-                cleanUrl();
-                sessionStorage.removeItem('oauth_state');
-                
-                // Get user info and start analysis
-                const userResponse = await githubApiCall('/user');
-                currentUser = userResponse;
-                updateUserGreeting();
-                
-                // Start fetching all commit data
-                await fetchAllCommitData();
-                
-                loading.style.display = 'none';
-                dashboard.style.display = 'block';
-                
-            } catch (error) {
-                console.error('OAuth callback error:', error);
-                updateStatus(`OAuth failed: ${error.message}`, 'error');
-                
-                // Clean up and show login form again
-                cleanUrl();
-                sessionStorage.removeItem('oauth_state');
-                
-                setTimeout(() => {
-                    loading.style.display = 'none';
-                    loginForm.style.display = 'block';
-                }, 3000);
+            if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
+                const confirm = window.confirm(
+                    'Token format looks unusual. GitHub Personal Access Tokens usually start with "ghp_" or "github_pat_".\n\n' +
+                    'Continue anyway?'
+                );
+                if (!confirm) return;
             }
-        }
-
-        async function exchangeCodeForToken(code) {
-            // Note: GitHub's token endpoint has CORS restrictions
-            // For a client-only app, we need to use GitHub's Device Flow instead
-            // But for demo purposes, let's try a few approaches:
             
-            try {
-                // Method 1: Try direct call (will likely fail due to CORS)
-                const response = await fetch('https://github.com/login/oauth/access_token', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        client_id: GITHUB_CONFIG.clientId,
-                        client_secret: 'your_client_secret_here', // This needs to be set
-                        code: code,
-                        redirect_uri: GITHUB_CONFIG.redirectUri
-                    })
-                });
+            githubToken = token;
+            authenticateUser(username);
+        });
 
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error_description || data.error);
-                }
-
-                return data.access_token;
-                
-            } catch (error) {
-                console.error('OAuth token exchange failed:', error);
-                
-                // Fallback: Show a helpful message and redirect to manual token entry
-                alert(`OAuth token exchange failed: ${error.message}\n\nThis is expected for client-only apps due to CORS restrictions.\n\nPlease use the manual token method below.`);
-                
-                // Clean URL and show login form with manual token option
-                cleanUrl();
-                throw new Error('OAuth not available - please use manual token method');
-            }
-        }
-
-        async function authenticateUser(username) {
-            updateStatus('Authenticating...', 'loading');
+        async function authenticateUser(expectedUsername) {
+            updateStatus('Verifying token...', 'loading');
             loginForm.style.display = 'none';
             loading.style.display = 'block';
 
             try {
                 // Verify token and get user info
                 const userResponse = await githubApiCall('/user');
-                if (username && userResponse.login !== username) {
-                    throw new Error('Username doesn\'t match token');
+                
+                if (expectedUsername && userResponse.login.toLowerCase() !== expectedUsername.toLowerCase()) {
+                    throw new Error(`Token belongs to user "${userResponse.login}", but you entered "${expectedUsername}"`);
                 }
                 
                 currentUser = userResponse;
                 updateUserGreeting();
+                
+                updateStatus('Token verified! Starting analysis...', 'loading');
                 
                 // Start fetching all commit data
                 await fetchAllCommitData();
@@ -763,25 +511,25 @@
                 dashboard.style.display = 'block';
                 
             } catch (error) {
-                updateStatus(`Authentication failed: ${error.message}`, 'error');
+                console.error('Authentication error:', error);
+                
+                let errorMessage = 'Authentication failed: ';
+                if (error.message.includes('401')) {
+                    errorMessage += 'Invalid token. Please check your Personal Access Token.';
+                } else if (error.message.includes('403')) {
+                    errorMessage += 'Token lacks required permissions. Make sure "repo" and "user" scopes are selected.';
+                } else if (error.message.includes('rate limit')) {
+                    errorMessage += 'Rate limit exceeded. Please try again later.';
+                } else {
+                    errorMessage += error.message;
+                }
+                
+                updateStatus(errorMessage, 'error');
                 setTimeout(() => {
                     loading.style.display = 'none';
                     loginForm.style.display = 'block';
-                }, 2000);
+                }, 4000);
             }
-        }
-
-        function generateRandomState() {
-            return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        }
-
-        function cleanUrl() {
-            const url = new URL(window.location);
-            url.searchParams.delete('code');
-            url.searchParams.delete('state');
-            url.searchParams.delete('error');
-            url.searchParams.delete('error_description');
-            window.history.replaceState({}, document.title, url.toString());
         }
 
         async function githubApiCall(endpoint, options = {}) {
@@ -798,7 +546,7 @@
                 headers: {
                     'Authorization': `token ${githubToken}`,
                     'Accept': 'application/vnd.github.v3+json',
-                    'User-Agent': 'GitHub-Commit-Tracker'
+                    'User-Agent': 'GitHub-Commit-Analyzer'
                 },
                 ...options
             });
@@ -807,25 +555,30 @@
             const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
             const rateLimitLimit = response.headers.get('X-RateLimit-Limit');
             if (rateLimitRemaining && rateLimitLimit) {
-                rateLimit.textContent = `${rateLimitRemaining}/${rateLimitLimit}`;
+                rateLimit.textContent = `${rateLimitRemaining}/${rateLimitLimit} remaining`;
             }
 
             if (!response.ok) {
-                throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+                const errorText = await response.text();
+                throw new Error(`GitHub API error: ${response.status} ${response.statusText} - ${errorText}`);
             }
 
             return await response.json();
         }
 
         async function fetchAllCommitData() {
-            updateStatus('Fetching repositories...', 'loading');
+            updateStatus('Fetching your repositories...', 'loading');
             
             try {
                 // Get all repositories for the user
                 const repos = await getAllRepositories();
+                
+                if (repos.length === 0) {
+                    throw new Error('No repositories found. Make sure your token has "repo" scope.');
+                }
+                
                 updateRepoCount(repos.length);
-
-                updateStatus('Analyzing commit history...', 'loading');
+                updateStatus(`Found ${repos.length} repositories. Analyzing commits...`, 'loading');
                 
                 // Process each repository
                 for (let i = 0; i < repos.length; i++) {
@@ -841,19 +594,21 @@
                         }
                     } catch (error) {
                         console.warn(`Failed to fetch commits for ${repo.name}:`, error.message);
+                        // Continue with other repos even if one fails
                     }
                     
-                    // Add delay to respect rate limits
+                    // Add small delay to be nice to GitHub's API
                     if (i < repos.length - 1) {
-                        await sleep(100);
+                        await sleep(50);
                     }
                 }
 
                 calculateYearsActive();
-                updateStatus('Complete!', 'success');
-                currentRepo.textContent = 'Analysis complete';
+                updateStatus('Analysis complete! 🎉', 'success');
+                currentRepo.textContent = `Analyzed ${analyzedRepos} repositories with ${totalCommits.toLocaleString()} total commits`;
                 
             } catch (error) {
+                console.error('Data fetching error:', error);
                 updateStatus(`Error: ${error.message}`, 'error');
             }
         }
@@ -864,13 +619,19 @@
             const perPage = 100;
 
             while (true) {
-                const repos = await githubApiCall(`/user/repos?page=${page}&per_page=${perPage}&sort=updated`);
+                const repos = await githubApiCall(`/user/repos?page=${page}&per_page=${perPage}&sort=updated&affiliation=owner,collaborator`);
                 if (repos.length === 0) break;
                 
                 allRepos = allRepos.concat(repos);
                 page++;
                 
                 if (repos.length < perPage) break; // Last page
+                
+                // Prevent infinite loops
+                if (page > 50) {
+                    console.warn('Stopped fetching repos after 50 pages (5000 repos)');
+                    break;
+                }
             }
 
             return allRepos;
@@ -894,9 +655,19 @@
                     
                     if (commits.length < perPage) break; // Last page
                     
+                    // Prevent very long operations
+                    if (page > 100) {
+                        console.warn(`Stopped fetching commits for ${repo.name} after 100 pages (10,000 commits)`);
+                        break;
+                    }
+                    
                 } catch (error) {
-                    // Repository might be empty or inaccessible
-                    break;
+                    // Repository might be empty, private, or inaccessible
+                    if (error.message.includes('409')) {
+                        // Empty repository
+                        break;
+                    }
+                    throw error;
                 }
             }
 
@@ -926,8 +697,8 @@
             const repoHeader = document.createElement('div');
             repoHeader.className = 'repo-header';
             repoHeader.innerHTML = `
-                <span class="repo-name">${repo.name}</span>
-                <span class="commit-count">${commits.length} commits</span>
+                <span class="repo-name">${escapeHtml(repo.name)}</span>
+                <span class="commit-count">${commits.length.toLocaleString()} commits</span>
             `;
             
             const commitData = document.createElement('div');
@@ -940,12 +711,15 @@
                 commitItem.className = 'commit-item';
                 
                 const date = new Date(commit.commit.author.date);
+                const shortSha = commit.sha.substring(0, 7);
+                const message = commit.commit.message.split('\n')[0];
+                
                 commitItem.innerHTML = `
-                    <div class="commit-sha">${commit.sha.substring(0, 7)}</div>
-                    <div class="commit-message">${escapeHtml(commit.commit.message.split('\n')[0])}</div>
+                    <div class="commit-sha">${shortSha}</div>
+                    <div class="commit-message">${escapeHtml(message)}</div>
                     <div class="commit-meta">
                         ${date.toLocaleDateString()} ${date.toLocaleTimeString()} • 
-                        ${commit.commit.author.name}
+                        ${escapeHtml(commit.commit.author.name)}
                     </div>
                 `;
                 
@@ -957,7 +731,7 @@
                 moreInfo.className = 'commit-item';
                 moreInfo.style.fontStyle = 'italic';
                 moreInfo.style.color = '#7d8590';
-                moreInfo.textContent = `... and ${commits.length - 10} more commits`;
+                moreInfo.textContent = `... and ${(commits.length - 10).toLocaleString()} more commits`;
                 commitData.appendChild(moreInfo);
             }
             
@@ -968,13 +742,14 @@
 
         function updateStatus(text, type) {
             statusText.textContent = text;
-            apiStatus.className = `api-status ${type}`;
+            apiStatus.className = `api-status ${type || ''}`;
         }
 
         function updateUserGreeting() {
             const greeting = document.getElementById('userGreeting');
             const joinDate = new Date(currentUser.created_at);
-            greeting.textContent = `${currentUser.name || currentUser.login} • Member since ${joinDate.getFullYear()}`;
+            const yearsOnGitHub = new Date().getFullYear() - joinDate.getFullYear();
+            greeting.textContent = `${currentUser.name || currentUser.login} • ${yearsOnGitHub} years on GitHub • ${currentUser.public_repos} public repos`;
         }
 
         function updateCommitCount() {
@@ -1003,8 +778,8 @@
                 });
             });
             
-            const years = Math.ceil((newestDate - oldestDate) / (1000 * 60 * 60 * 24 * 365));
-            animateNumber('yearsActive', Math.max(1, years));
+            const years = Math.max(1, Math.ceil((newestDate - oldestDate) / (1000 * 60 * 60 * 24 * 365)));
+            animateNumber('yearsActive', years);
         }
 
         function animateNumber(elementId, targetValue) {
@@ -1061,7 +836,7 @@
             dashboard.style.display = 'none';
             loginForm.style.display = 'block';
             
-            updateStatus('Ready', '');
+            updateStatus('Ready to analyze your commits!', '');
             rateLimit.textContent = 'Unknown';
             currentRepo.textContent = 'Not started';
         }
