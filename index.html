@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Code Tracker</title>
+    <title>GitHub Commit Visualizer</title>
     <style>
         * {
             margin: 0;
@@ -23,7 +23,7 @@
         
         .container {
             width: 100%;
-            max-width: 400px;
+            max-width: 1200px;
             padding: 20px;
         }
         
@@ -33,6 +33,8 @@
             border-radius: 12px;
             padding: 32px;
             box-shadow: 0 16px 32px rgba(1, 4, 9, 0.85);
+            max-width: 400px;
+            margin: 0 auto;
         }
         
         .logo {
@@ -102,45 +104,9 @@
             transform: translateY(-1px);
         }
         
-        .btn-github {
-            background: linear-gradient(180deg, #30363d 0%, #21262d 100%);
-            border: 1px solid #30363d;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .btn-github:hover {
-            background: linear-gradient(180deg, #3c434d 0%, #30363d 100%);
-        }
-        
-        .divider {
-            text-align: center;
-            margin: 20px 0;
-            position: relative;
-            color: #7d8590;
-        }
-        
-        .divider::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #30363d;
-        }
-        
-        .divider span {
-            background: #21262d;
-            padding: 0 16px;
-        }
-        
         .dashboard {
             display: none;
             animation: fadeIn 0.5s ease;
-            max-width: 1200px;
             width: 100%;
         }
         
@@ -180,69 +146,6 @@
             border-color: #da3633;
         }
         
-        .commit-data {
-            background: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        
-        .commit-item {
-            border-bottom: 1px solid #21262d;
-            padding: 12px 0;
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-            font-size: 12px;
-        }
-        
-        .commit-item:last-child {
-            border-bottom: none;
-        }
-        
-        .commit-sha {
-            color: #1f6feb;
-            font-weight: 600;
-        }
-        
-        .commit-message {
-            color: #f0f6fc;
-            margin: 4px 0;
-        }
-        
-        .commit-meta {
-            color: #7d8590;
-            font-size: 11px;
-        }
-        
-        .repo-section {
-            margin-bottom: 30px;
-        }
-        
-        .repo-header {
-            background: #21262d;
-            border: 1px solid #30363d;
-            border-radius: 8px 8px 0 0;
-            padding: 12px 16px;
-            font-weight: 600;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .repo-name {
-            color: #1f6feb;
-        }
-        
-        .commit-count {
-            background: #1f883d;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-        }
-        
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -277,88 +180,26 @@
             letter-spacing: 0.5px;
         }
         
-        .chart-container {
-            background: #21262d;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 20px;
-        }
-        
-        .chart-title {
-            font-size: 18px;
-            margin-bottom: 16px;
-            color: #f0f6fc;
-        }
-        
-        .chart-bar {
-            display: flex;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-        
-        .chart-year {
-            width: 60px;
-            font-size: 12px;
-            color: #7d8590;
-        }
-        
-        .chart-bar-fill {
-            flex: 1;
-            height: 20px;
-            background: #0d1117;
-            border-radius: 4px;
-            margin: 0 12px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .chart-bar-value {
-            height: 100%;
-            background: linear-gradient(90deg, #1f883d 0%, #2ea043 100%);
-            border-radius: 4px;
-            transition: width 1s ease;
-        }
-        
-        .chart-count {
-            width: 80px;
-            font-size: 12px;
-            color: #f0f6fc;
-            text-align: right;
-        }
-        
-        .logout-btn {
-            background: transparent;
-            color: #7d8590;
-            border: 1px solid #30363d;
-            padding: 8px 16px;
-            font-size: 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 20px;
-        }
-        
-        .logout-btn:hover {
-            color: #f0f6fc;
-            border-color: #7d8590;
+        /* Visualization Styles */
+        .viz-section {
+            margin-bottom: 32px;
         }
         
         .viz-controls {
             display: flex;
-            gap: 16px;
+            gap: 12px;
             margin-bottom: 20px;
             flex-wrap: wrap;
-            align-items: center;
         }
         
         .viz-btn {
             background: #21262d;
             color: #f0f6fc;
             border: 1px solid #30363d;
-            padding: 8px 16px;
+            padding: 10px 16px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
             transition: all 0.2s ease;
         }
         
@@ -373,16 +214,15 @@
             color: white;
         }
         
-        .visualization-container {
-            background: #0d1117;
+        .viz-container {
+            background: #21262d;
             border: 1px solid #30363d;
             border-radius: 8px;
-            margin-bottom: 20px;
             overflow: hidden;
         }
         
         .viz-header {
-            background: #21262d;
+            background: #161b22;
             padding: 16px;
             border-bottom: 1px solid #30363d;
             font-weight: 600;
@@ -392,6 +232,7 @@
         .viz-content {
             padding: 20px;
             min-height: 400px;
+            background: #0d1117;
         }
         
         .calendar-grid {
@@ -420,61 +261,6 @@
         .calendar-day.level-3 { background: #26a641; }
         .calendar-day.level-4 { background: #39d353; }
         
-        .timeline-container {
-            position: relative;
-            height: 300px;
-            overflow-x: auto;
-            overflow-y: hidden;
-        }
-        
-        .repo-bubble {
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .repo-bubble:hover {
-            stroke: #1f6feb;
-            stroke-width: 2px;
-        }
-        
-        .tooltip {
-            position: absolute;
-            background: #21262d;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            padding: 8px 12px;
-            font-size: 12px;
-            color: #f0f6fc;
-            pointer-events: none;
-            z-index: 1000;
-            box-shadow: 0 8px 16px rgba(1, 4, 9, 0.3);
-        }
-        
-        .legend {
-            display: flex;
-            gap: 16px;
-            margin-top: 16px;
-            font-size: 12px;
-            color: #7d8590;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        .legend-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
         .loading {
             text-align: center;
             padding: 40px;
@@ -494,6 +280,86 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .logout-btn {
+            background: transparent;
+            color: #7d8590;
+            border: 1px solid #30363d;
+            padding: 8px 16px;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        
+        .logout-btn:hover {
+            color: #f0f6fc;
+            border-color: #7d8590;
+        }
+        
+        .commit-data {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .commit-item {
+            border-bottom: 1px solid #21262d;
+            padding: 12px 0;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 12px;
+        }
+        
+        .commit-sha {
+            color: #1f6feb;
+            font-weight: 600;
+        }
+        
+        .commit-message {
+            color: #f0f6fc;
+            margin: 4px 0;
+        }
+        
+        .commit-meta {
+            color: #7d8590;
+            font-size: 11px;
+        }
+        
+        .repo-section {
+            margin-bottom: 20px;
+        }
+        
+        .repo-header {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 8px 8px 0 0;
+            padding: 12px 16px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .repo-name {
+            color: #1f6feb;
+        }
+        
+        .commit-count {
+            background: #1f883d;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
         }
     </style>
 </head>
@@ -518,9 +384,8 @@
                     <label for="password">Personal Access Token</label>
                     <input type="password" id="password" placeholder="ghp_xxxxxxxxxxxx" required>
                     <small style="color: #7d8590; font-size: 12px; margin-top: 8px; display: block; line-height: 1.4;">
-                        🔗 <strong>Get your token:</strong> GitHub Settings → Developer settings → Personal access tokens → Generate new token<br>
-                        ✅ <strong>Required scopes:</strong> <code>repo</code> (for private repos), <code>user</code><br>
-                        💡 <strong>Note:</strong> Use <code>public_repo</code> instead of <code>repo</code> if you only want public repositories
+                        🔗 <strong>Get your token:</strong> GitHub Settings → Developer settings → Personal access tokens<br>
+                        ✅ <strong>Required scopes:</strong> <code>repo</code>, <code>user</code>
                     </small>
                 </div>
                 
@@ -537,14 +402,14 @@
         <!-- Dashboard -->
         <div id="dashboard" class="dashboard">
             <div class="dashboard-header">
-                <h1>GitHub Commit Data</h1>
+                <h1>Your GitHub Journey</h1>
                 <p id="userGreeting">Welcome back, developer!</p>
             </div>
             
             <div class="api-status" id="apiStatus">
-                <div>API Status: <span id="statusText">Ready</span></div>
+                <div>Status: <span id="statusText">Ready</span></div>
                 <div>Rate Limit: <span id="rateLimit">Unknown</span></div>
-                <div>Processing: <span id="currentRepo">Not started</span></div>
+                <div>Progress: <span id="currentRepo">Not started</span></div>
             </div>
             
             <div class="stats-grid">
@@ -554,15 +419,39 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="totalRepos">0</div>
-                    <div class="stat-label">Repositories Analyzed</div>
+                    <div class="stat-label">Repositories</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="apiCalls">0</div>
-                    <div class="stat-label">API Calls Made</div>
+                    <div class="stat-label">API Calls</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="yearsActive">0</div>
-                    <div class="stat-label">Years on GitHub</div>
+                    <div class="stat-label">Years Active</div>
+                </div>
+            </div>
+            
+            <!-- VISUALIZATIONS -->
+            <div class="viz-section">
+                <div class="viz-controls">
+                    <button class="viz-btn active" onclick="switchViz('calendar')">📅 Calendar</button>
+                    <button class="viz-btn" onclick="switchViz('timeline')">📈 Timeline</button>
+                    <button class="viz-btn" onclick="switchViz('bubbles')">🫧 Bubbles</button>
+                    <button class="viz-btn" onclick="switchViz('heatmap')">🔥 Heatmap</button>
+                    <button class="viz-btn" onclick="switchViz('raw')">📄 Raw Data</button>
+                </div>
+                
+                <div class="viz-container">
+                    <div class="viz-header">
+                        <span id="vizTitle">Interactive Visualizations</span>
+                    </div>
+                    <div class="viz-content" id="vizContent">
+                        <div style="text-align: center; padding: 60px; color: #7d8590;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+                            <div style="font-size: 18px; margin-bottom: 8px;">Ready for Visualizations!</div>
+                            <div style="font-size: 14px;">Complete your commit analysis to see interactive charts</div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -574,17 +463,16 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
     <script>
-        // GitHub API configuration
-        const GITHUB_API_BASE = 'https://api.github.com';
+        // === GLOBAL VARIABLES ===
         let githubToken = null;
         let currentUser = null;
         let apiCallCount = 0;
         let totalCommits = 0;
         let analyzedRepos = 0;
         let allCommitData = [];
-        let currentVisualization = 'calendar';
+        let currentViz = 'calendar';
 
-        // UI elements
+        // === DOM ELEMENTS ===
         const loginForm = document.getElementById('loginForm');
         const loading = document.getElementById('loading');
         const dashboard = document.getElementById('dashboard');
@@ -593,8 +481,8 @@
         const rateLimit = document.getElementById('rateLimit');
         const currentRepo = document.getElementById('currentRepo');
 
-        // Form submission handler for Personal Access Token authentication
-        document.getElementById('loginFormElement').addEventListener('submit', function(e) {
+        // === AUTHENTICATION ===
+        document.getElementById('loginFormElement').addEventListener('submit', async function(e) {
             e.preventDefault();
             const username = document.getElementById('username').value.trim();
             const token = document.getElementById('password').value.trim();
@@ -604,16 +492,8 @@
                 return;
             }
             
-            if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
-                const confirm = window.confirm(
-                    'Token format looks unusual. GitHub Personal Access Tokens usually start with "ghp_" or "github_pat_".\n\n' +
-                    'Continue anyway?'
-                );
-                if (!confirm) return;
-            }
-            
             githubToken = token;
-            authenticateUser(username);
+            await authenticateUser(username);
         });
 
         async function authenticateUser(expectedUsername) {
@@ -622,22 +502,15 @@
             loading.style.display = 'block';
 
             try {
-                // Verify token and get user info
                 const userResponse = await githubApiCall('/user');
                 
                 if (expectedUsername && userResponse.login.toLowerCase() !== expectedUsername.toLowerCase()) {
-                    throw new Error(`Token belongs to user "${userResponse.login}", but you entered "${expectedUsername}"`);
+                    throw new Error(`Token belongs to "${userResponse.login}", but you entered "${expectedUsername}"`);
                 }
                 
                 currentUser = userResponse;
                 updateUserGreeting();
                 
-                // Check token scopes by trying to access a private repo endpoint
-                await checkTokenScopes();
-                
-                updateStatus('Token verified! Starting analysis...', 'loading');
-                
-                // Start fetching all commit data
                 await fetchAllCommitData();
                 
                 loading.style.display = 'none';
@@ -645,14 +518,11 @@
                 
             } catch (error) {
                 console.error('Authentication error:', error);
-                
                 let errorMessage = 'Authentication failed: ';
                 if (error.message.includes('401')) {
-                    errorMessage += 'Invalid token. Please check your Personal Access Token.';
+                    errorMessage += 'Invalid token';
                 } else if (error.message.includes('403')) {
-                    errorMessage += 'Token lacks required permissions. Make sure "repo" and "user" scopes are selected.';
-                } else if (error.message.includes('rate limit')) {
-                    errorMessage += 'Rate limit exceeded. Please try again later.';
+                    errorMessage += 'Token lacks required permissions';
                 } else {
                     errorMessage += error.message;
                 }
@@ -661,77 +531,46 @@
                 setTimeout(() => {
                     loading.style.display = 'none';
                     loginForm.style.display = 'block';
-                }, 4000);
+                }, 3000);
             }
         }
 
-        async function checkTokenScopes() {
-            try {
-                // Try to access the user's private repos to check scope
-                await githubApiCall('/user/repos?visibility=private&per_page=1');
-                console.log('✅ Token has access to private repositories');
-            } catch (error) {
-                if (error.message.includes('403')) {
-                    console.warn('⚠️ Token only has access to public repositories. Some repos may be skipped.');
-                    // Show a warning but don't fail authentication
-                    updateStatus('Token verified! (Note: Only public repos accessible)', 'loading');
-                    await sleep(1000);
-                }
-            }
-        }
-
-        async function githubApiCall(endpoint, options = {}) {
-            if (!githubToken) {
-                throw new Error('No GitHub token available');
-            }
-
+        async function githubApiCall(endpoint) {
             apiCallCount++;
             updateApiCallCount();
 
-            const url = endpoint.startsWith('http') ? endpoint : `${GITHUB_API_BASE}${endpoint}`;
-            
-            const response = await fetch(url, {
+            const response = await fetch(`https://api.github.com${endpoint}`, {
                 headers: {
                     'Authorization': `token ${githubToken}`,
                     'Accept': 'application/vnd.github.v3+json',
                     'User-Agent': 'GitHub-Commit-Analyzer'
-                },
-                ...options
+                }
             });
 
-            // Update rate limit info
             const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
             const rateLimitLimit = response.headers.get('X-RateLimit-Limit');
             if (rateLimitRemaining && rateLimitLimit) {
-                rateLimit.textContent = `${rateLimitRemaining}/${rateLimitLimit} remaining`;
+                rateLimit.textContent = `${rateLimitRemaining}/${rateLimitLimit}`;
             }
 
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`GitHub API error: ${response.status} ${response.statusText} - ${errorText}`);
+                throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
             }
 
             return await response.json();
         }
 
+        // === DATA FETCHING ===
         async function fetchAllCommitData() {
-            updateStatus('Fetching your repositories...', 'loading');
+            updateStatus('Fetching repositories...', 'loading');
             
             try {
-                // Get all repositories for the user
                 const repos = await getAllRepositories();
-                
-                if (repos.length === 0) {
-                    throw new Error('No repositories found. Make sure your token has "repo" scope.');
-                }
-                
                 updateRepoCount(repos.length);
-                updateStatus(`Found ${repos.length} repositories. Analyzing commits...`, 'loading');
+                updateStatus(`Analyzing ${repos.length} repositories...`, 'loading');
                 
-                let publicRepos = 0;
-                let privateReposSkipped = 0;
+                let skippedPrivate = 0;
                 
-                // Process each repository
                 for (let i = 0; i < repos.length; i++) {
                     const repo = repos[i];
                     currentRepo.textContent = `${repo.name} (${i + 1}/${repos.length})`;
@@ -742,52 +581,31 @@
                             addRepositoryCommits(repo, commits);
                             analyzedRepos++;
                             updateRepoCount(analyzedRepos);
-                            publicRepos++;
                         }
                     } catch (error) {
-                        if (error.message.includes('403') && error.message.includes('Resource not accessible')) {
-                            privateReposSkipped++;
+                        if (error.message.includes('403')) {
+                            skippedPrivate++;
                         }
-                        console.warn(`Failed to fetch commits for ${repo.name}:`, error.message);
-                        // Continue with other repos even if one fails
+                        console.warn(`Skipped ${repo.name}: ${error.message}`);
                     }
                     
-                    // Add small delay to be nice to GitHub's API
-                    if (i < repos.length - 1) {
-                        await sleep(50);
-                    }
+                    await sleep(50);
                 }
 
                 calculateYearsActive();
                 
-                let statusMessage = 'Analysis complete! 🎉';
-                if (privateReposSkipped > 0) {
-                    statusMessage += ` (${privateReposSkipped} private repos skipped - token needs "repo" scope)`;
+                let statusMsg = `Analysis complete! Found ${totalCommits.toLocaleString()} commits`;
+                if (skippedPrivate > 0) {
+                    statusMsg += ` (${skippedPrivate} private repos skipped)`;
                 }
                 
-                updateStatus(statusMessage, 'success');
-                currentRepo.textContent = `Analyzed ${analyzedRepos} repositories with ${totalCommits.toLocaleString()} total commits`;
+                updateStatus(statusMsg, 'success');
+                currentRepo.textContent = 'Complete';
                 
-                // Show visualizations after data is loaded
-                console.log('Commit data loaded:', allCommitData.length, 'repos with commits');
-                
+                // SHOW VISUALIZATIONS
                 if (allCommitData.length > 0) {
-                    console.log('Showing visualizations...');
-                    // Trigger visualization immediately
-                    showVisualization('calendar');
-                } else {
-                    console.warn('No commit data found to visualize');
-                    const vizContent = document.getElementById('vizContent');
-                    if (vizContent) {
-                        vizContent.innerHTML = `
-                            <div style="text-align: center; padding: 60px; color: #7d8590;">
-                                <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
-                                <div style="font-size: 18px; margin-bottom: 8px;">No Commit Data Found</div>
-                                <div style="font-size: 14px;">We analyzed ${analyzedRepos} repositories but found no commits by your username.</div>
-                                <div style="font-size: 12px; margin-top: 8px; color: #da3633;">This might happen if all your repos are private and your token only has public access.</div>
-                            </div>
-                        `;
-                    }
+                    console.log('✅ Creating visualizations with', allCommitData.length, 'repositories');
+                    switchViz('calendar');
                 }
                 
             } catch (error) {
@@ -799,22 +617,13 @@
         async function getAllRepositories() {
             let allRepos = [];
             let page = 1;
-            const perPage = 100;
 
             while (true) {
-                const repos = await githubApiCall(`/user/repos?page=${page}&per_page=${perPage}&sort=updated&affiliation=owner,collaborator`);
+                const repos = await githubApiCall(`/user/repos?page=${page}&per_page=100&sort=updated`);
                 if (repos.length === 0) break;
-                
                 allRepos = allRepos.concat(repos);
                 page++;
-                
-                if (repos.length < perPage) break; // Last page
-                
-                // Prevent infinite loops
-                if (page > 50) {
-                    console.warn('Stopped fetching repos after 50 pages (5000 repos)');
-                    break;
-                }
+                if (repos.length < 100) break;
             }
 
             return allRepos;
@@ -823,44 +632,19 @@
         async function getRepositoryCommits(repo) {
             let allCommits = [];
             let page = 1;
-            const perPage = 100;
 
             while (true) {
                 try {
-                    const commits = await githubApiCall(
-                        `/repos/${repo.full_name}/commits?author=${currentUser.login}&page=${page}&per_page=${perPage}`
-                    );
-                    
+                    const commits = await githubApiCall(`/repos/${repo.full_name}/commits?author=${currentUser.login}&page=${page}&per_page=100`);
                     if (commits.length === 0) break;
-                    
                     allCommits = allCommits.concat(commits);
                     page++;
-                    
-                    if (commits.length < perPage) break; // Last page
-                    
-                    // Prevent very long operations
-                    if (page > 100) {
-                        console.warn(`Stopped fetching commits for ${repo.name} after 100 pages (10,000 commits)`);
-                        break;
-                    }
-                    
+                    if (commits.length < 100) break;
                 } catch (error) {
-                    // Handle different types of repository access issues
                     if (error.message.includes('403')) {
-                        if (error.message.includes('Resource not accessible by personal access token')) {
-                            console.warn(`Skipping private repository: ${repo.name} (token needs 'repo' scope for private repos)`);
-                        } else {
-                            console.warn(`Access denied to repository: ${repo.name}`);
-                        }
-                        break;
-                    } else if (error.message.includes('409')) {
-                        // Empty repository
-                        console.warn(`Empty repository: ${repo.name}`);
-                        break;
-                    } else {
-                        console.warn(`Failed to fetch commits for ${repo.name}: ${error.message}`);
-                        break;
+                        console.warn(`Access denied: ${repo.name}`);
                     }
+                    break;
                 }
             }
 
@@ -870,69 +654,341 @@
         function addRepositoryCommits(repo, commits) {
             totalCommits += commits.length;
             updateCommitCount();
-
-            // Store commit data
-            allCommitData.push({
-                repo: repo,
-                commits: commits
-            });
-
-            // Display raw commit data
-            displayRepositoryCommits(repo, commits);
+            allCommitData.push({ repo, commits });
         }
 
-        function displayRepositoryCommits(repo, commits) {
-            const container = document.getElementById('commitDataContainer');
+        // === VISUALIZATIONS ===
+        function switchViz(type) {
+            console.log('🎨 Switching to visualization:', type);
+            currentViz = type;
             
-            const repoSection = document.createElement('div');
-            repoSection.className = 'repo-section';
+            // Update active button
+            document.querySelectorAll('.viz-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
             
-            const repoHeader = document.createElement('div');
-            repoHeader.className = 'repo-header';
-            repoHeader.innerHTML = `
-                <span class="repo-name">${escapeHtml(repo.name)}</span>
-                <span class="commit-count">${commits.length.toLocaleString()} commits</span>
-            `;
+            const vizContent = document.getElementById('vizContent');
+            const vizTitle = document.getElementById('vizTitle');
             
-            const commitData = document.createElement('div');
-            commitData.className = 'commit-data';
-            
-            // Show first 10 commits (most recent)
-            const commitsToShow = commits.slice(0, 10);
-            commitsToShow.forEach(commit => {
-                const commitItem = document.createElement('div');
-                commitItem.className = 'commit-item';
-                
-                const date = new Date(commit.commit.author.date);
-                const shortSha = commit.sha.substring(0, 7);
-                const message = commit.commit.message.split('\n')[0];
-                
-                commitItem.innerHTML = `
-                    <div class="commit-sha">${shortSha}</div>
-                    <div class="commit-message">${escapeHtml(message)}</div>
-                    <div class="commit-meta">
-                        ${date.toLocaleDateString()} ${date.toLocaleTimeString()} • 
-                        ${escapeHtml(commit.commit.author.name)}
-                    </div>
-                `;
-                
-                commitData.appendChild(commitItem);
+            console.log('📍 Elements found:', {
+                vizContent: !!vizContent,
+                vizTitle: !!vizTitle,
+                dataLength: allCommitData.length
             });
             
-            if (commits.length > 10) {
-                const moreInfo = document.createElement('div');
-                moreInfo.className = 'commit-item';
-                moreInfo.style.fontStyle = 'italic';
-                moreInfo.style.color = '#7d8590';
-                moreInfo.textContent = `... and ${(commits.length - 10).toLocaleString()} more commits`;
-                commitData.appendChild(moreInfo);
+            if (!vizContent) {
+                console.error('❌ vizContent element not found!');
+                return;
             }
             
-            repoSection.appendChild(repoHeader);
-            repoSection.appendChild(commitData);
-            container.appendChild(repoSection);
+            if (allCommitData.length === 0) {
+                vizContent.innerHTML = `
+                    <div style="text-align: center; padding: 60px; color: #7d8590;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
+                        <div>No commit data available yet</div>
+                        <button onclick="testViz()" style="margin-top: 16px; padding: 8px 16px; background: #1f883d; color: white; border: none; border-radius: 4px; cursor: pointer;">Test with Sample Data</button>
+                    </div>
+                `;
+                return;
+            }
+            
+            vizContent.innerHTML = '<div style="text-align: center; padding: 20px; color: #7d8590;">Loading...</div>';
+            
+            try {
+                switch(type) {
+                    case 'calendar':
+                        vizTitle.textContent = 'Commit Calendar - GitHub-style activity heatmap';
+                        createCommitCalendar(vizContent);
+                        break;
+                    case 'timeline':
+                        vizTitle.textContent = 'Timeline - Commits over time';
+                        createTimeline(vizContent);
+                        break;
+                    case 'bubbles':
+                        vizTitle.textContent = 'Repository Bubbles - Size by commit count';
+                        createBubbleChart(vizContent);
+                        break;
+                    case 'heatmap':
+                        vizTitle.textContent = 'Time Patterns - When you code most';
+                        createHeatmap(vizContent);
+                        break;
+                    case 'raw':
+                        vizTitle.textContent = 'Raw Commit Data';
+                        showRawData(vizContent);
+                        break;
+                    default:
+                        vizContent.innerHTML = '<div style="text-align: center; padding: 60px; color: #7d8590;">Unknown visualization</div>';
+                }
+                console.log('✅ Visualization created successfully');
+            } catch (error) {
+                console.error('❌ Visualization error:', error);
+                vizContent.innerHTML = `
+                    <div style="text-align: center; padding: 60px; color: #da3633;">
+                        <div style="font-size: 18px; margin-bottom: 8px;">Error creating visualization</div>
+                        <div style="font-size: 14px;">${error.message}</div>
+                    </div>
+                `;
+            }
         }
 
+        function createCommitCalendar(container) {
+            const commits = getAllCommitsFlat();
+            const commitsByDate = {};
+            
+            commits.forEach(commit => {
+                const date = commit.commit.author.date.split('T')[0];
+                commitsByDate[date] = (commitsByDate[date] || 0) + 1;
+            });
+            
+            const now = new Date();
+            const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+            
+            const calendarHTML = `
+                <div style="margin-bottom: 16px; color: #7d8590;">Last 365 days of activity</div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; font-size: 12px; color: #7d8590;">
+                    <span>Less</span>
+                    <div style="display: flex; gap: 2px;">
+                        <div style="width: 10px; height: 10px; background: #161b22; border-radius: 2px;"></div>
+                        <div style="width: 10px; height: 10px; background: #0e4429; border-radius: 2px;"></div>
+                        <div style="width: 10px; height: 10px; background: #006d32; border-radius: 2px;"></div>
+                        <div style="width: 10px; height: 10px; background: #26a641; border-radius: 2px;"></div>
+                        <div style="width: 10px; height: 10px; background: #39d353; border-radius: 2px;"></div>
+                    </div>
+                    <span>More</span>
+                </div>
+            `;
+            
+            container.innerHTML = calendarHTML;
+            
+            const grid = document.getElementById('calendarGrid');
+            
+            for (let d = new Date(oneYearAgo); d <= now; d.setDate(d.getDate() + 1)) {
+                const dateStr = d.toISOString().split('T')[0];
+                const commitCount = commitsByDate[dateStr] || 0;
+                
+                const day = document.createElement('div');
+                day.className = 'calendar-day';
+                
+                if (commitCount > 0) {
+                    if (commitCount >= 10) day.classList.add('level-4');
+                    else if (commitCount >= 5) day.classList.add('level-3');
+                    else if (commitCount >= 2) day.classList.add('level-2');
+                    else day.classList.add('level-1');
+                }
+                
+                day.title = `${dateStr}: ${commitCount} commits`;
+                grid.appendChild(day);
+            }
+        }
+
+        function createTimeline(container) {
+            const commits = getAllCommitsFlat();
+            const commitsByMonth = {};
+            
+            commits.forEach(commit => {
+                const date = new Date(commit.commit.author.date);
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                commitsByMonth[monthKey] = (commitsByMonth[monthKey] || 0) + 1;
+            });
+            
+            const sortedMonths = Object.keys(commitsByMonth).sort();
+            const maxCommits = Math.max(...Object.values(commitsByMonth));
+            
+            let timelineHTML = '<div style="margin-bottom: 20px; color: #7d8590;">Monthly commit activity</div>';
+            
+            sortedMonths.forEach(month => {
+                const count = commitsByMonth[month];
+                const percentage = (count / maxCommits) * 100;
+                
+                timelineHTML += `
+                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <div style="width: 80px; font-size: 12px; color: #7d8590;">${month}</div>
+                        <div style="flex: 1; background: #161b22; height: 20px; border-radius: 4px; margin: 0 12px; position: relative; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #1f883d, #26a641); height: 100%; width: ${percentage}%; border-radius: 4px; transition: width 0.5s ease;"></div>
+                        </div>
+                        <div style="width: 50px; text-align: right; font-size: 12px; color: #f0f6fc;">${count}</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = timelineHTML;
+        }
+
+        function createBubbleChart(container) {
+            const repoSizes = allCommitData.map(repo => ({
+                name: repo.repo.name,
+                commits: repo.commits.length,
+                language: repo.repo.language || 'Unknown'
+            })).sort((a, b) => b.commits - a.commits);
+            
+            let bubblesHTML = '<div style="margin-bottom: 20px; color: #7d8590;">Repository sizes by commit count</div>';
+            bubblesHTML += '<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;">';
+            
+            const maxCommits = Math.max(...repoSizes.map(r => r.commits));
+            
+            repoSizes.slice(0, 15).forEach(repo => {
+                const size = Math.max(40, (repo.commits / maxCommits) * 120);
+                const colors = {
+                    'JavaScript': '#f1e05a',
+                    'Python': '#3572A5',
+                    'TypeScript': '#2b7489',
+                    'HTML': '#e34c26',
+                    'CSS': '#563d7c',
+                    'Java': '#b07219',
+                    'Unknown': '#7d8590'
+                };
+                const color = colors[repo.language] || '#7d8590';
+                
+                bubblesHTML += `
+                    <div style="
+                        width: ${size}px; 
+                        height: ${size}px; 
+                        background: ${color}; 
+                        border-radius: 50%; 
+                        display: flex; 
+                        align-items: center; 
+                        justify-content: center; 
+                        color: white; 
+                        font-size: 10px; 
+                        text-align: center;
+                        cursor: pointer;
+                        transition: transform 0.2s ease;
+                        " 
+                        onmouseover="this.style.transform='scale(1.1)'" 
+                        onmouseout="this.style.transform='scale(1)'"
+                        title="${repo.name}: ${repo.commits} commits (${repo.language})">
+                        ${repo.name.substring(0, 8)}
+                    </div>
+                `;
+            });
+            
+            bubblesHTML += '</div>';
+            container.innerHTML = bubblesHTML;
+        }
+
+        function createHeatmap(container) {
+            const commits = getAllCommitsFlat();
+            const hourDayData = {};
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            
+            commits.forEach(commit => {
+                const date = new Date(commit.commit.author.date);
+                const hour = date.getHours();
+                const day = date.getDay();
+                const key = `${day}-${hour}`;
+                hourDayData[key] = (hourDayData[key] || 0) + 1;
+            });
+            
+            const maxCommits = Math.max(...Object.values(hourDayData));
+            
+            let heatmapHTML = '<div style="margin-bottom: 20px; color: #7d8590;">When you code most (hour vs day of week)</div>';
+            heatmapHTML += '<div style="display: grid; grid-template-columns: auto repeat(24, 1fr); gap: 2px; font-size: 10px;">';
+            
+            // Hour headers
+            heatmapHTML += '<div></div>'; // Empty corner
+            for (let hour = 0; hour < 24; hour++) {
+                heatmapHTML += `<div style="text-align: center; color: #7d8590; padding: 2px;">${hour}</div>`;
+            }
+            
+            // Day rows
+            for (let day = 0; day < 7; day++) {
+                heatmapHTML += `<div style="color: #7d8590; padding: 2px; text-align: right;">${days[day]}</div>`;
+                
+                for (let hour = 0; hour < 24; hour++) {
+                    const key = `${day}-${hour}`;
+                    const commits = hourDayData[key] || 0;
+                    const intensity = commits / maxCommits;
+                    
+                    let bgColor = '#161b22';
+                    if (commits > 0) {
+                        const alpha = Math.max(0.2, intensity);
+                        bgColor = `rgba(31, 136, 61, ${alpha})`;
+                    }
+                    
+                    heatmapHTML += `
+                        <div style="
+                            width: 12px; 
+                            height: 12px; 
+                            background: ${bgColor}; 
+                            border-radius: 2px; 
+                            cursor: pointer;
+                            " 
+                            title="${days[day]} ${hour}:00 - ${commits} commits">
+                        </div>
+                    `;
+                }
+            }
+            
+            heatmapHTML += '</div>';
+            container.innerHTML = heatmapHTML;
+        }
+
+        function showRawData(container) {
+            let rawHTML = '<div style="margin-bottom: 20px; color: #7d8590;">Raw commit data from your repositories</div>';
+            
+            allCommitData.slice(0, 10).forEach(repo => {
+                rawHTML += `
+                    <div class="repo-section">
+                        <div class="repo-header">
+                            <span class="repo-name">${repo.repo.name}</span>
+                            <span class="commit-count">${repo.commits.length} commits</span>
+                        </div>
+                        <div class="commit-data">
+                `;
+                
+                repo.commits.slice(0, 5).forEach(commit => {
+                    const date = new Date(commit.commit.author.date);
+                    rawHTML += `
+                        <div class="commit-item">
+                            <div class="commit-sha">${commit.sha.substring(0, 7)}</div>
+                            <div class="commit-message">${commit.commit.message.split('\n')[0]}</div>
+                            <div class="commit-meta">${date.toLocaleDateString()} ${date.toLocaleTimeString()}</div>
+                        </div>
+                    `;
+                });
+                
+                if (repo.commits.length > 5) {
+                    rawHTML += `<div class="commit-item" style="font-style: italic; color: #7d8590;">... and ${repo.commits.length - 5} more commits</div>`;
+                }
+                
+                rawHTML += '</div></div>';
+            });
+            
+            container.innerHTML = rawHTML;
+        }
+
+        function getAllCommitsFlat() {
+            const commits = [];
+            allCommitData.forEach(repo => {
+                repo.commits.forEach(commit => {
+                    commits.push(commit);
+                });
+            });
+            return commits;
+        }
+
+        function testViz() {
+            // Create test data
+            allCommitData = [{
+                repo: { name: 'test-repo', language: 'JavaScript' },
+                commits: Array.from({length: 50}, (_, i) => ({
+                    sha: 'abc' + i,
+                    commit: {
+                        message: `Test commit ${i}`,
+                        author: {
+                            name: 'Test User',
+                            date: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString()
+                        }
+                    }
+                }))
+            }];
+            
+            totalCommits = 50;
+            updateCommitCount();
+            switchViz('calendar');
+        }
+
+        // === UTILITY FUNCTIONS ===
         function updateStatus(text, type) {
             statusText.textContent = text;
             apiStatus.className = `api-status ${type || ''}`;
@@ -941,8 +997,8 @@
         function updateUserGreeting() {
             const greeting = document.getElementById('userGreeting');
             const joinDate = new Date(currentUser.created_at);
-            const yearsOnGitHub = new Date().getFullYear() - joinDate.getFullYear();
-            greeting.textContent = `${currentUser.name || currentUser.login} • ${yearsOnGitHub} years on GitHub • ${currentUser.public_repos} public repos`;
+            const years = new Date().getFullYear() - joinDate.getFullYear();
+            greeting.textContent = `${currentUser.name || currentUser.login} • ${years} years on GitHub`;
         }
 
         function updateCommitCount() {
@@ -963,8 +1019,8 @@
             let oldestDate = new Date();
             let newestDate = new Date(0);
             
-            allCommitData.forEach(repoData => {
-                repoData.commits.forEach(commit => {
+            allCommitData.forEach(repo => {
+                repo.commits.forEach(commit => {
                     const date = new Date(commit.commit.author.date);
                     if (date < oldestDate) oldestDate = date;
                     if (date > newestDate) newestDate = date;
@@ -995,460 +1051,11 @@
             update();
         }
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
         function sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
-        // ===== VISUALIZATION FUNCTIONS =====
-
-        function showVisualization(type) {
-            currentVisualization = type;
-            
-            console.log('showVisualization called with type:', type);
-            console.log('allCommitData length:', allCommitData.length);
-            
-            // Update active button
-            document.querySelectorAll('.viz-btn').forEach(btn => btn.classList.remove('active'));
-            const targetBtn = document.querySelector(`[onclick="showVisualization('${type}')"]`);
-            if (targetBtn) targetBtn.classList.add('active');
-            
-            const vizContent = document.getElementById('vizContent');
-            const vizTitle = document.getElementById('vizTitle');
-            
-            console.log('vizContent found:', !!vizContent);
-            console.log('vizTitle found:', !!vizTitle);
-            
-            if (!vizContent || !vizTitle) {
-                console.error('Visualization elements not found');
-                // Try to find them with different selectors
-                console.log('All elements with viz-content class:', document.querySelectorAll('.viz-content'));
-                console.log('All elements with id vizContent:', document.querySelectorAll('#vizContent'));
-                return;
-            }
-            
-            // Check if we have data
-            if (allCommitData.length === 0) {
-                vizContent.innerHTML = `
-                    <div style="text-align: center; padding: 60px; color: #7d8590;">
-                        <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
-                        <div style="font-size: 18px; margin-bottom: 8px;">No Data Yet</div>
-                        <div style="font-size: 14px;">Complete the commit analysis above to see your visualizations!</div>
-                        <button onclick="testVisualization()" style="margin-top: 16px; padding: 8px 16px; background: #1f883d; color: white; border: none; border-radius: 4px; cursor: pointer;">🔧 Test Visualizations</button>
-                    </div>
-                `;
-                vizTitle.textContent = 'Waiting for Data...';
-                return;
-            }
-            
-            // Clear previous visualization
-            vizContent.innerHTML = '<div style="text-align: center; padding: 20px; color: #7d8590;">Loading visualization...</div>';
-            
-            // Show new visualization
-            try {
-                switch(type) {
-                    case 'calendar':
-                        vizTitle.textContent = 'Commit Calendar - Your coding activity over time';
-                        createCommitCalendar();
-                        break;
-                    case 'timeline':
-                        vizTitle.textContent = 'Timeline - Commits over time by repository';
-                        createTimeline();
-                        break;
-                    case 'bubbles':
-                        vizTitle.textContent = 'Repository Bubbles - Size represents commit count';
-                        createBubbleChart();
-                        break;
-                    case 'heatmap':
-                        vizTitle.textContent = 'Time Patterns - When you code most';
-                        createHeatmap();
-                        break;
-                    case 'river':
-                        vizTitle.textContent = 'Commit River - Flow of activity across repositories';
-                        createRiverChart();
-                        break;
-                    default:
-                        vizContent.innerHTML = '<div style="text-align: center; padding: 60px; color: #7d8590;">Unknown visualization type</div>';
-                }
-                console.log('Visualization created successfully');
-            } catch (error) {
-                console.error('Visualization error:', error);
-                vizContent.innerHTML = `
-                    <div style="text-align: center; padding: 60px; color: #da3633;">
-                        <div style="font-size: 18px; margin-bottom: 8px;">Visualization Error</div>
-                        <div style="font-size: 14px;">${error.message}</div>
-                        <button onclick="testVisualization()" style="margin-top: 16px; padding: 8px 16px; background: #1f883d; color: white; border: none; border-radius: 4px; cursor: pointer;">🔧 Test Visualizations</button>
-                    </div>
-                `;
-            }
-        }
-
-        // Test function to debug visualizations
-        function testVisualization() {
-            console.log('Testing visualization system...');
-            console.log('Current commit data:', allCommitData);
-            
-            // Create some test data if none exists
-            if (allCommitData.length === 0) {
-                console.log('Creating test data...');
-                allCommitData = [{
-                    repo: { name: 'test-repo', language: 'JavaScript' },
-                    commits: [
-                        {
-                            sha: 'abc123',
-                            commit: {
-                                message: 'Test commit',
-                                author: {
-                                    name: 'Test User',
-                                    date: new Date().toISOString()
-                                }
-                            }
-                        }
-                    ]
-                }];
-            }
-            
-            showVisualization('calendar');
-        }
-
-        function createCommitCalendar() {
-            const commits = getAllCommitsFlat();
-            const commitsByDate = {};
-            
-            // Process commits by date
-            commits.forEach(commit => {
-                const date = commit.commit.author.date.split('T')[0];
-                commitsByDate[date] = (commitsByDate[date] || 0) + 1;
-            });
-            
-            const container = document.getElementById('vizContent');
-            const now = new Date();
-            const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-            
-            // Create calendar grid
-            const calendarContainer = document.createElement('div');
-            calendarContainer.style.overflowX = 'auto';
-            calendarContainer.innerHTML = '<div style="margin-bottom: 16px; color: #7d8590; font-size: 14px;">Last 365 days</div>';
-            
-            const grid = document.createElement('div');
-            grid.className = 'calendar-grid';
-            
-            // Generate days for the last year
-            for (let d = new Date(oneYearAgo); d <= now; d.setDate(d.getDate() + 1)) {
-                const dateStr = d.toISOString().split('T')[0];
-                const commitCount = commitsByDate[dateStr] || 0;
-                
-                const day = document.createElement('div');
-                day.className = 'calendar-day';
-                
-                // Set intensity level
-                if (commitCount > 0) {
-                    if (commitCount >= 10) day.classList.add('level-4');
-                    else if (commitCount >= 5) day.classList.add('level-3');
-                    else if (commitCount >= 2) day.classList.add('level-2');
-                    else day.classList.add('level-1');
-                }
-                
-                day.title = `${dateStr}: ${commitCount} commits`;
-                day.addEventListener('mouseenter', showTooltip);
-                day.addEventListener('mouseleave', hideTooltip);
-                
-                grid.appendChild(day);
-            }
-            
-            calendarContainer.appendChild(grid);
-            
-            // Add legend
-            const legend = document.createElement('div');
-            legend.className = 'legend';
-            legend.innerHTML = `
-                <span>Less</span>
-                <div class="legend-item"><div class="legend-color" style="background: #161b22;"></div></div>
-                <div class="legend-item"><div class="legend-color level-1"></div></div>
-                <div class="legend-item"><div class="legend-color level-2"></div></div>
-                <div class="legend-item"><div class="legend-color level-3"></div></div>
-                <div class="legend-item"><div class="legend-color level-4"></div></div>
-                <span>More</span>
-            `;
-            calendarContainer.appendChild(legend);
-            
-            container.appendChild(calendarContainer);
-        }
-
-        function createTimeline() {
-            const container = document.getElementById('vizContent');
-            const width = 800;
-            const height = 300;
-            const margin = { top: 20, right: 30, bottom: 40, left: 50 };
-            
-            const svg = d3.select(container)
-                .append('svg')
-                .attr('width', width)
-                .attr('height', height)
-                .style('background', '#0d1117');
-            
-            const commits = getAllCommitsFlat();
-            
-            // Group commits by month
-            const commitsByMonth = d3.rollup(
-                commits,
-                v => v.length,
-                d => d3.timeMonth(new Date(d.commit.author.date))
-            );
-            
-            const data = Array.from(commitsByMonth, ([date, count]) => ({ date, count }))
-                .sort((a, b) => a.date - b.date);
-            
-            const x = d3.scaleTime()
-                .domain(d3.extent(data, d => d.date))
-                .range([margin.left, width - margin.right]);
-            
-            const y = d3.scaleLinear()
-                .domain([0, d3.max(data, d => d.count)])
-                .range([height - margin.bottom, margin.top]);
-            
-            // Create line
-            const line = d3.line()
-                .x(d => x(d.date))
-                .y(d => y(d.count))
-                .curve(d3.curveMonotoneX);
-            
-            // Add axes
-            svg.append('g')
-                .attr('transform', `translate(0,${height - margin.bottom})`)
-                .call(d3.axisBottom(x).tickFormat(d3.timeFormat('%b %Y')))
-                .selectAll('text')
-                .style('fill', '#7d8590')
-                .style('font-size', '12px');
-            
-            svg.append('g')
-                .attr('transform', `translate(${margin.left},0)`)
-                .call(d3.axisLeft(y))
-                .selectAll('text')
-                .style('fill', '#7d8590')
-                .style('font-size', '12px');
-            
-            // Add line path
-            svg.append('path')
-                .datum(data)
-                .attr('fill', 'none')
-                .attr('stroke', '#1f883d')
-                .attr('stroke-width', 2)
-                .attr('d', line);
-            
-            // Add dots
-            svg.selectAll('.dot')
-                .data(data)
-                .enter().append('circle')
-                .attr('class', 'dot')
-                .attr('cx', d => x(d.date))
-                .attr('cy', d => y(d.count))
-                .attr('r', 4)
-                .attr('fill', '#1f883d')
-                .on('mouseenter', function(event, d) {
-                    showTooltip(event, `${d3.timeFormat('%B %Y')(d.date)}: ${d.count} commits`);
-                })
-                .on('mouseleave', hideTooltip);
-        }
-
-        function createBubbleChart() {
-            const container = document.getElementById('vizContent');
-            const width = 800;
-            const height = 400;
-            
-            const svg = d3.select(container)
-                .append('svg')
-                .attr('width', width)
-                .attr('height', height)
-                .style('background', '#0d1117');
-            
-            // Prepare data
-            const repoData = allCommitData.map(repo => {
-                const lastCommit = new Date(Math.max(...repo.commits.map(c => new Date(c.commit.author.date))));
-                const daysSinceLastCommit = (new Date() - lastCommit) / (1000 * 60 * 60 * 24);
-                
-                return {
-                    name: repo.repo.name,
-                    commits: repo.commits.length,
-                    lastActivity: daysSinceLastCommit,
-                    language: repo.repo.language || 'Unknown'
-                };
-            }).filter(d => d.commits > 0);
-            
-            // Create bubble simulation
-            const simulation = d3.forceSimulation(repoData)
-                .force('charge', d3.forceManyBody().strength(-30))
-                .force('center', d3.forceCenter(width / 2, height / 2))
-                .force('collision', d3.forceCollide().radius(d => Math.sqrt(d.commits) * 2 + 2));
-            
-            const colorScale = d3.scaleOrdinal()
-                .domain(['JavaScript', 'Python', 'Java', 'TypeScript', 'HTML', 'CSS', 'Unknown'])
-                .range(['#f1e05a', '#3572A5', '#b07219', '#2b7489', '#e34c26', '#563d7c', '#7d8590']);
-            
-            const bubbles = svg.selectAll('.bubble')
-                .data(repoData)
-                .enter().append('circle')
-                .attr('class', 'repo-bubble')
-                .attr('r', d => Math.sqrt(d.commits) * 2)
-                .attr('fill', d => colorScale(d.language))
-                .attr('opacity', 0.8)
-                .on('mouseenter', function(event, d) {
-                    showTooltip(event, `${d.name}<br/>${d.commits} commits<br/>Last active: ${Math.round(d.lastActivity)} days ago`);
-                })
-                .on('mouseleave', hideTooltip);
-            
-            simulation.on('tick', () => {
-                bubbles
-                    .attr('cx', d => d.x)
-                    .attr('cy', d => d.y);
-            });
-        }
-
-        function createHeatmap() {
-            const container = document.getElementById('vizContent');
-            const commits = getAllCommitsFlat();
-            
-            // Process commits by hour and day of week
-            const hourDayData = {};
-            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            
-            commits.forEach(commit => {
-                const date = new Date(commit.commit.author.date);
-                const hour = date.getHours();
-                const day = date.getDay();
-                const key = `${day}-${hour}`;
-                hourDayData[key] = (hourDayData[key] || 0) + 1;
-            });
-            
-            const maxCommits = Math.max(...Object.values(hourDayData));
-            
-            // Create grid
-            const grid = document.createElement('div');
-            grid.style.display = 'grid';
-            grid.style.gridTemplateColumns = 'auto repeat(24, 1fr)';
-            grid.style.gap = '2px';
-            grid.style.margin = '20px 0';
-            
-            // Add hour headers
-            grid.appendChild(document.createElement('div')); // Empty corner
-            for (let hour = 0; hour < 24; hour++) {
-                const hourLabel = document.createElement('div');
-                hourLabel.textContent = hour.toString().padStart(2, '0');
-                hourLabel.style.textAlign = 'center';
-                hourLabel.style.fontSize = '12px';
-                hourLabel.style.color = '#7d8590';
-                grid.appendChild(hourLabel);
-            }
-            
-            // Add day rows
-            for (let day = 0; day < 7; day++) {
-                // Day label
-                const dayLabel = document.createElement('div');
-                dayLabel.textContent = days[day];
-                dayLabel.style.fontSize = '12px';
-                dayLabel.style.color = '#7d8590';
-                dayLabel.style.textAlign = 'right';
-                dayLabel.style.paddingRight = '8px';
-                grid.appendChild(dayLabel);
-                
-                // Hour cells
-                for (let hour = 0; hour < 24; hour++) {
-                    const key = `${day}-${hour}`;
-                    const commits = hourDayData[key] || 0;
-                    const intensity = commits / maxCommits;
-                    
-                    const cell = document.createElement('div');
-                    cell.style.width = '16px';
-                    cell.style.height = '16px';
-                    cell.style.borderRadius = '2px';
-                    cell.style.cursor = 'pointer';
-                    
-                    if (commits === 0) {
-                        cell.style.background = '#161b22';
-                    } else {
-                        const alpha = Math.max(0.1, intensity);
-                        cell.style.background = `rgba(31, 136, 61, ${alpha})`;
-                    }
-                    
-                    cell.title = `${days[day]} ${hour}:00 - ${commits} commits`;
-                    cell.addEventListener('mouseenter', showTooltip);
-                    cell.addEventListener('mouseleave', hideTooltip);
-                    
-                    grid.appendChild(cell);
-                }
-            }
-            
-            container.appendChild(grid);
-        }
-
-        function createRiverChart() {
-            const container = document.getElementById('vizContent');
-            container.innerHTML = '<div style="color: #7d8590; text-align: center; padding: 60px;">River chart coming soon! 🌊<br/>Currently showing repository timeline...</div>';
-            
-            // For now, show a simplified repository timeline
-            const repoTimeline = document.createElement('div');
-            repoTimeline.style.marginTop = '20px';
-            
-            allCommitData.slice(0, 10).forEach(repo => {
-                const repoDiv = document.createElement('div');
-                repoDiv.style.marginBottom = '8px';
-                repoDiv.style.padding = '8px';
-                repoDiv.style.background = '#21262d';
-                repoDiv.style.borderRadius = '4px';
-                repoDiv.style.borderLeft = '4px solid #1f883d';
-                
-                const firstCommit = new Date(Math.min(...repo.commits.map(c => new Date(c.commit.author.date))));
-                const lastCommit = new Date(Math.max(...repo.commits.map(c => new Date(c.commit.author.date))));
-                
-                repoDiv.innerHTML = `
-                    <strong>${repo.repo.name}</strong> 
-                    <span style="color: #7d8590;">(${repo.commits.length} commits)</span><br/>
-                    <small style="color: #7d8590;">
-                        ${firstCommit.toLocaleDateString()} → ${lastCommit.toLocaleDateString()}
-                    </small>
-                `;
-                
-                repoTimeline.appendChild(repoDiv);
-            });
-            
-            container.appendChild(repoTimeline);
-        }
-
-        function getAllCommitsFlat() {
-            const commits = [];
-            allCommitData.forEach(repo => {
-                repo.commits.forEach(commit => {
-                    commits.push({ ...commit, repoName: repo.repo.name });
-                });
-            });
-            return commits;
-        }
-
-        function showTooltip(event, content) {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'tooltip';
-            tooltip.innerHTML = content || event.target.title;
-            tooltip.style.left = (event.pageX + 10) + 'px';
-            tooltip.style.top = (event.pageY - 10) + 'px';
-            document.body.appendChild(tooltip);
-            
-            event.target._tooltip = tooltip;
-        }
-
-        function hideTooltip(event) {
-            if (event.target._tooltip) {
-                event.target._tooltip.remove();
-                delete event.target._tooltip;
-            }
-        }
-
         function logout() {
-            // Reset all data
             githubToken = null;
             currentUser = null;
             apiCallCount = 0;
@@ -1456,39 +1063,18 @@
             analyzedRepos = 0;
             allCommitData = [];
             
-            // Clear UI
             document.getElementById('commitDataContainer').innerHTML = '';
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
             
-            // Reset visualization
-            const vizContent = document.getElementById('vizContent');
-            if (vizContent) {
-                vizContent.innerHTML = `
-                    <div style="text-align: center; padding: 60px; color: #7d8590;">
-                        <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
-                        <div style="font-size: 18px; margin-bottom: 8px;">Visualizations Loading...</div>
-                        <div style="font-size: 14px;">Complete the analysis above to see your commit visualizations!</div>
-                    </div>
-                `;
-            }
+            ['totalCommits', 'totalRepos', 'apiCalls', 'yearsActive'].forEach(id => {
+                document.getElementById(id).textContent = '0';
+            });
             
-            const vizTitle = document.getElementById('vizTitle');
-            if (vizTitle) {
-                vizTitle.textContent = 'Interactive Visualizations';
-            }
-            
-            // Reset counters
-            document.getElementById('totalCommits').textContent = '0';
-            document.getElementById('totalRepos').textContent = '0';
-            document.getElementById('apiCalls').textContent = '0';
-            document.getElementById('yearsActive').textContent = '0';
-            
-            // Show login form
             dashboard.style.display = 'none';
             loginForm.style.display = 'block';
             
-            updateStatus('Ready to analyze your commits!', '');
+            updateStatus('Ready to analyze commits!', '');
             rateLimit.textContent = 'Unknown';
             currentRepo.textContent = 'Not started';
         }
