@@ -519,7 +519,8 @@
                     <input type="password" id="password" placeholder="ghp_xxxxxxxxxxxx" required>
                     <small style="color: #7d8590; font-size: 12px; margin-top: 8px; display: block; line-height: 1.4;">
                         🔗 <strong>Get your token:</strong> GitHub Settings → Developer settings → Personal access tokens → Generate new token<br>
-                        ✅ <strong>Required scopes:</strong> <code>repo</code>, <code>user</code>
+                        ✅ <strong>Required scopes:</strong> <code>repo</code> (for private repos), <code>user</code><br>
+                        💡 <strong>Note:</strong> Use <code>public_repo</code> instead of <code>repo</code> if you only want public repositories
                     </small>
                 </div>
                 
@@ -631,6 +632,9 @@
                 currentUser = userResponse;
                 updateUserGreeting();
                 
+                // Check token scopes by trying to access a private repo endpoint
+                await checkTokenScopes();
+                
                 updateStatus('Token verified! Starting analysis...', 'loading');
                 
                 // Start fetching all commit data
@@ -658,6 +662,21 @@
                     loading.style.display = 'none';
                     loginForm.style.display = 'block';
                 }, 4000);
+            }
+        }
+
+        async function checkTokenScopes() {
+            try {
+                // Try to access the user's private repos to check scope
+                await githubApiCall('/user/repos?visibility=private&per_page=1');
+                console.log('✅ Token has access to private repositories');
+            } catch (error) {
+                if (error.message.includes('403')) {
+                    console.warn('⚠️ Token only has access to public repositories. Some repos may be skipped.');
+                    // Show a warning but don't fail authentication
+                    updateStatus('Token verified! (Note: Only public repos accessible)', 'loading');
+                    await sleep(1000);
+                }
             }
         }
 
@@ -709,6 +728,9 @@
                 updateRepoCount(repos.length);
                 updateStatus(`Found ${repos.length} repositories. Analyzing commits...`, 'loading');
                 
+                let publicRepos = 0;
+                let privateReposSkipped = 0;
+                
                 // Process each repository
                 for (let i = 0; i < repos.length; i++) {
                     const repo = repos[i];
@@ -720,8 +742,12 @@
                             addRepositoryCommits(repo, commits);
                             analyzedRepos++;
                             updateRepoCount(analyzedRepos);
+                            publicRepos++;
                         }
                     } catch (error) {
+                        if (error.message.includes('403') && error.message.includes('Resource not accessible')) {
+                            privateReposSkipped++;
+                        }
                         console.warn(`Failed to fetch commits for ${repo.name}:`, error.message);
                         // Continue with other repos even if one fails
                     }
@@ -733,12 +759,19 @@
                 }
 
                 calculateYearsActive();
-                updateStatus('Analysis complete! 🎉', 'success');
+                
+                let statusMessage = 'Analysis complete! 🎉';
+                if (privateReposSkipped > 0) {
+                    statusMessage += ` (${privateReposSkipped} private repos skipped - token needs "repo" scope)`;
+                }
+                
+                updateStatus(statusMessage, 'success');
                 currentRepo.textContent = `Analyzed ${analyzedRepos} repositories with ${totalCommits.toLocaleString()} total commits`;
                 
                 // Show visualizations after data is loaded
-                if (allCommitData.length > 0) {
-                    document.getElementById('visualizationSection').style.display = 'block';
+                const vizSection = document.getElementById('visualizationSection');
+                if (allCommitData.length > 0 && vizSection) {
+                    vizSection.style.display = 'block';
                     showVisualization('calendar');
                 }
                 
@@ -797,12 +830,22 @@
                     }
                     
                 } catch (error) {
-                    // Repository might be empty, private, or inaccessible
-                    if (error.message.includes('409')) {
+                    // Handle different types of repository access issues
+                    if (error.message.includes('403')) {
+                        if (error.message.includes('Resource not accessible by personal access token')) {
+                            console.warn(`Skipping private repository: ${repo.name} (token needs 'repo' scope for private repos)`);
+                        } else {
+                            console.warn(`Access denied to repository: ${repo.name}`);
+                        }
+                        break;
+                    } else if (error.message.includes('409')) {
                         // Empty repository
+                        console.warn(`Empty repository: ${repo.name}`);
+                        break;
+                    } else {
+                        console.warn(`Failed to fetch commits for ${repo.name}: ${error.message}`);
                         break;
                     }
-                    throw error;
                 }
             }
 
