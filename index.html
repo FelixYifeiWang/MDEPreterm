@@ -138,7 +138,6 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             text-shadow: 0 0 30px rgba(31, 111, 235, 0.3);
-            animation: glow 3s ease-in-out infinite;
         }
         
         .dashboard-header p {
@@ -149,24 +148,41 @@
         }
         
         .api-status {
-            background: #21262d;
+            background: linear-gradient(135deg, #161b22 0%, #21262d 100%);
             border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 20px;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 32px;
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         }
         
         .api-status.loading {
             border-color: #1f6feb;
+            box-shadow: 0 4px 20px rgba(31, 111, 235, 0.2);
         }
         
         .api-status.success {
             border-color: #1f883d;
+            box-shadow: 0 4px 20px rgba(31, 136, 61, 0.2);
         }
         
         .api-status.error {
             border-color: #da3633;
+            box-shadow: 0 4px 20px rgba(218, 54, 51, 0.2);
+        }
+        
+        .api-status div {
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .api-status span {
+            color: #1f6feb;
+            font-weight: 600;
         }
         
         .stats-grid {
@@ -267,26 +283,11 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
         
-        .viz-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            transition: left 0.5s ease;
-        }
-        
         .viz-btn:hover {
             background: linear-gradient(135deg, #30363d 0%, #3d444d 100%);
             border-color: #1f6feb;
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(31, 111, 235, 0.2);
-        }
-        
-        .viz-btn:hover::before {
-            left: 100%;
         }
         
         .viz-btn.active {
@@ -411,18 +412,6 @@
             border-radius: 12px;
             transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
-            box-shadow: 0 0 15px rgba(31, 136, 61, 0.5);
-        }
-        
-        .timeline-bar-fill::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            animation: shimmer 2s infinite;
         }
         
         .bubble-item {
@@ -516,11 +505,6 @@
             width: 8px;
         }
         
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-        
         @keyframes glow {
             0%, 100% { opacity: 0.5; }
             50% { opacity: 1; }
@@ -537,7 +521,6 @@
         
         .glow-text {
             text-shadow: 0 0 10px rgba(31, 111, 235, 0.5);
-            animation: glow 2s ease-in-out infinite;
         }
         
         .loading {
@@ -1074,12 +1057,6 @@
                 day.title = `${dateStr}: ${commitCount} commits`;
                 day.style.animationDelay = `${dayIndex * 2}ms`;
                 
-                // Add pulse animation for high activity days
-                if (commitCount >= 5) {
-                    day.style.animation = 'glow 2s ease-in-out infinite';
-                    day.style.animationDelay = `${Math.random() * 2}s`;
-                }
-                
                 grid.appendChild(day);
                 dayIndex++;
             }
@@ -1476,14 +1453,17 @@
 
         function animateNumber(elementId, targetValue) {
             const element = document.getElementById(elementId);
-            const duration = 1000;
+            const duration = 2000;
             const startTime = Date.now();
             const startValue = parseInt(element.textContent.replace(/,/g, '')) || 0;
             
             function update() {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                const currentValue = Math.floor(startValue + (targetValue - startValue) * progress);
+                
+                // Use easing function for smoother animation
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                const currentValue = Math.floor(startValue + (targetValue - startValue) * easeProgress);
                 element.textContent = currentValue.toLocaleString();
                 
                 if (progress < 1) {
