@@ -112,17 +112,40 @@
         
         .dashboard-header {
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 40px;
+            position: relative;
+            padding: 30px 0;
+        }
+        
+        .dashboard-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #1f6feb, transparent);
+            opacity: 0.6;
         }
         
         .dashboard-header h1 {
-            font-size: 32px;
-            margin-bottom: 8px;
+            font-size: 42px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #f0f6fc 0%, #1f6feb 50%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(31, 111, 235, 0.3);
+            animation: glow 3s ease-in-out infinite;
         }
         
         .dashboard-header p {
             color: #7d8590;
-            font-size: 16px;
+            font-size: 18px;
+            font-weight: 500;
+            opacity: 0.9;
         }
         
         .api-status {
@@ -154,30 +177,67 @@
         }
         
         .stat-card {
-            background: #21262d;
+            background: linear-gradient(135deg, #21262d 0%, #161b22 100%);
             border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 24px;
+            border-radius: 12px;
+            padding: 28px;
             text-align: center;
-            transition: transform 0.2s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #1f6feb, #7c3aed, #ec4899, #f59e0b);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
         
         .stat-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-8px) scale(1.02);
+            border-color: #1f6feb;
+            box-shadow: 0 12px 40px rgba(31, 111, 235, 0.2);
+        }
+        
+        .stat-card:hover::before {
+            opacity: 1;
         }
         
         .stat-number {
-            font-size: 36px;
-            font-weight: 700;
-            color: #1f883d;
-            margin-bottom: 8px;
+            font-size: 42px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1f883d 0%, #39d353 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            text-shadow: 0 0 30px rgba(31, 136, 61, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover .stat-number {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 10px rgba(31, 136, 61, 0.6));
         }
         
         .stat-label {
             color: #7d8590;
             font-size: 14px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+        
+        .stat-card:hover .stat-label {
+            color: #1f6feb;
         }
         
         /* Visualization Styles */
@@ -193,73 +253,292 @@
         }
         
         .viz-btn {
-            background: #21262d;
+            background: linear-gradient(135deg, #21262d 0%, #2d333b 100%);
             color: #f0f6fc;
             border: 1px solid #30363d;
-            padding: 10px 16px;
-            border-radius: 6px;
+            padding: 12px 20px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
-            transition: all 0.2s ease;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .viz-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
         }
         
         .viz-btn:hover {
-            background: #30363d;
+            background: linear-gradient(135deg, #30363d 0%, #3d444d 100%);
             border-color: #1f6feb;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(31, 111, 235, 0.2);
+        }
+        
+        .viz-btn:hover::before {
+            left: 100%;
         }
         
         .viz-btn.active {
-            background: #1f6feb;
+            background: linear-gradient(135deg, #1f6feb 0%, #0969da 100%);
             border-color: #1f6feb;
             color: white;
+            box-shadow: 0 8px 25px rgba(31, 111, 235, 0.4);
+            transform: translateY(-2px);
         }
         
         .viz-container {
-            background: #21262d;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
             border: 1px solid #30363d;
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        
+        .viz-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #1f6feb, #7c3aed, #ec4899, #f59e0b, #10b981);
+            opacity: 0.8;
         }
         
         .viz-header {
-            background: #161b22;
-            padding: 16px;
+            background: linear-gradient(135deg, #161b22 0%, #21262d 100%);
+            padding: 20px;
             border-bottom: 1px solid #30363d;
             font-weight: 600;
             color: #f0f6fc;
+            position: relative;
         }
         
         .viz-content {
-            padding: 20px;
-            min-height: 400px;
-            background: #0d1117;
+            padding: 30px;
+            min-height: 450px;
+            background: radial-gradient(ellipse at center, #0d1117 0%, #010409 100%);
+            position: relative;
         }
         
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(53, 1fr);
-            gap: 2px;
-            margin: 20px 0;
+            gap: 3px;
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(33, 38, 45, 0.3);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
         }
         
         .calendar-day {
             width: 12px;
             height: 12px;
-            border-radius: 2px;
+            border-radius: 3px;
             background: #161b22;
             border: 1px solid #21262d;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
+            position: relative;
+        }
+        
+        .calendar-day::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, transparent, rgba(31, 111, 235, 0.3), transparent);
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
         
         .calendar-day:hover {
-            border-color: #f0f6fc;
+            transform: scale(1.3);
+            z-index: 10;
+            box-shadow: 0 4px 15px rgba(31, 111, 235, 0.4);
         }
         
-        .calendar-day.level-1 { background: #0e4429; }
-        .calendar-day.level-2 { background: #006d32; }
-        .calendar-day.level-3 { background: #26a641; }
-        .calendar-day.level-4 { background: #39d353; }
+        .calendar-day:hover::before {
+            opacity: 1;
+        }
+        
+        .calendar-day.level-1 { 
+            background: linear-gradient(135deg, #0e4429 0%, #1a7f37 100%);
+            box-shadow: 0 0 8px rgba(14, 68, 41, 0.5);
+        }
+        .calendar-day.level-2 { 
+            background: linear-gradient(135deg, #006d32 0%, #26a641 100%);
+            box-shadow: 0 0 12px rgba(0, 109, 50, 0.6);
+        }
+        .calendar-day.level-3 { 
+            background: linear-gradient(135deg, #26a641 0%, #39d353 100%);
+            box-shadow: 0 0 16px rgba(38, 166, 65, 0.7);
+        }
+        .calendar-day.level-4 { 
+            background: linear-gradient(135deg, #39d353 0%, #7ee787 100%);
+            box-shadow: 0 0 20px rgba(57, 211, 83, 0.8);
+        }
+        
+        .timeline-bar {
+            position: relative;
+            background: linear-gradient(135deg, #161b22 0%, #21262d 100%);
+            height: 24px;
+            border-radius: 12px;
+            margin: 0 12px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .timeline-bar-fill {
+            background: linear-gradient(90deg, #1f883d 0%, #26a641 50%, #39d353 100%);
+            height: 100%;
+            border-radius: 12px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            box-shadow: 0 0 15px rgba(31, 136, 61, 0.5);
+        }
+        
+        .timeline-bar-fill::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        .bubble-item {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            position: relative;
+            filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.3));
+        }
+        
+        .bubble-item:hover {
+            transform: scale(1.15) rotate(5deg);
+            filter: drop-shadow(0 8px 30px rgba(31, 111, 235, 0.4));
+        }
+        
+        .bubble-item::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            background: radial-gradient(circle, rgba(31, 111, 235, 0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .bubble-item:hover::before {
+            opacity: 1;
+        }
+        
+        .heatmap-cell {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border-radius: 3px;
+            position: relative;
+        }
+        
+        .heatmap-cell:hover {
+            transform: scale(1.5);
+            z-index: 10;
+            box-shadow: 0 4px 15px rgba(31, 111, 235, 0.6);
+        }
+        
+        .heatmap-cell::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #1f6feb, #7c3aed);
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .heatmap-cell:hover::before {
+            opacity: 0.5;
+        }
+        
+        .data-card {
+            background: linear-gradient(135deg, #21262d 0%, #161b22 100%);
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .data-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #1f883d 0%, #39d353 100%);
+            transition: width 0.3s ease;
+        }
+        
+        .data-card:hover {
+            transform: translateX(8px);
+            border-color: #1f6feb;
+            box-shadow: 0 8px 25px rgba(31, 111, 235, 0.15);
+        }
+        
+        .data-card:hover::before {
+            width: 8px;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        @keyframes glow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .glow-text {
+            text-shadow: 0 0 10px rgba(31, 111, 235, 0.5);
+            animation: glow 2s ease-in-out infinite;
+        }
         
         .loading {
             text-align: center;
@@ -662,9 +941,14 @@
             console.log('🎨 Switching to visualization:', type);
             currentViz = type;
             
-            // Update active button
+            // Update active button - handle both event-based and programmatic calls
             document.querySelectorAll('.viz-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            
+            // Find the button for this type and make it active
+            const targetButton = document.querySelector(`[onclick="switchViz('${type}')"]`);
+            if (targetButton) {
+                targetButton.classList.add('active');
+            }
             
             const vizContent = document.getElementById('vizContent');
             const vizTitle = document.getElementById('vizTitle');
@@ -742,25 +1026,36 @@
             const now = new Date();
             const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
             
+            const totalCommits = Object.values(commitsByDate).reduce((a, b) => a + b, 0);
+            const maxDay = Math.max(...Object.values(commitsByDate));
+            
             const calendarHTML = `
-                <div style="margin-bottom: 16px; color: #7d8590;">Last 365 days of activity</div>
-                <div class="calendar-grid" id="calendarGrid"></div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; font-size: 12px; color: #7d8590;">
-                    <span>Less</span>
-                    <div style="display: flex; gap: 2px;">
-                        <div style="width: 10px; height: 10px; background: #161b22; border-radius: 2px;"></div>
-                        <div style="width: 10px; height: 10px; background: #0e4429; border-radius: 2px;"></div>
-                        <div style="width: 10px; height: 10px; background: #006d32; border-radius: 2px;"></div>
-                        <div style="width: 10px; height: 10px; background: #26a641; border-radius: 2px;"></div>
-                        <div style="width: 10px; height: 10px; background: #39d353; border-radius: 2px;"></div>
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <div class="glow-text" style="font-size: 24px; font-weight: 600; margin-bottom: 8px;">
+                        ${totalCommits.toLocaleString()} commits in the last year
                     </div>
-                    <span>More</span>
+                    <div style="color: #7d8590; font-size: 16px;">
+                        Most active day: ${maxDay} commits • Average: ${(totalCommits / 365).toFixed(1)} commits/day
+                    </div>
+                </div>
+                <div class="calendar-grid floating" id="calendarGrid"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 16px; background: rgba(33, 38, 45, 0.3); border-radius: 8px; backdrop-filter: blur(10px);">
+                    <span style="color: #7d8590; font-size: 14px;">Less</span>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <div style="width: 12px; height: 12px; background: #161b22; border-radius: 3px; border: 1px solid #21262d;"></div>
+                        <div style="width: 12px; height: 12px; background: linear-gradient(135deg, #0e4429 0%, #1a7f37 100%); border-radius: 3px; box-shadow: 0 0 8px rgba(14, 68, 41, 0.5);"></div>
+                        <div style="width: 12px; height: 12px; background: linear-gradient(135deg, #006d32 0%, #26a641 100%); border-radius: 3px; box-shadow: 0 0 12px rgba(0, 109, 50, 0.6);"></div>
+                        <div style="width: 12px; height: 12px; background: linear-gradient(135deg, #26a641 0%, #39d353 100%); border-radius: 3px; box-shadow: 0 0 16px rgba(38, 166, 65, 0.7);"></div>
+                        <div style="width: 12px; height: 12px; background: linear-gradient(135deg, #39d353 0%, #7ee787 100%); border-radius: 3px; box-shadow: 0 0 20px rgba(57, 211, 83, 0.8);"></div>
+                    </div>
+                    <span style="color: #7d8590; font-size: 14px;">More</span>
                 </div>
             `;
             
             container.innerHTML = calendarHTML;
             
             const grid = document.getElementById('calendarGrid');
+            let dayIndex = 0;
             
             for (let d = new Date(oneYearAgo); d <= now; d.setDate(d.getDate() + 1)) {
                 const dateStr = d.toISOString().split('T')[0];
@@ -777,7 +1072,16 @@
                 }
                 
                 day.title = `${dateStr}: ${commitCount} commits`;
+                day.style.animationDelay = `${dayIndex * 2}ms`;
+                
+                // Add pulse animation for high activity days
+                if (commitCount >= 5) {
+                    day.style.animation = 'glow 2s ease-in-out infinite';
+                    day.style.animationDelay = `${Math.random() * 2}s`;
+                }
+                
                 grid.appendChild(day);
+                dayIndex++;
             }
         }
 
@@ -793,71 +1097,118 @@
             
             const sortedMonths = Object.keys(commitsByMonth).sort();
             const maxCommits = Math.max(...Object.values(commitsByMonth));
+            const totalCommits = Object.values(commitsByMonth).reduce((a, b) => a + b, 0);
             
-            let timelineHTML = '<div style="margin-bottom: 20px; color: #7d8590;">Monthly commit activity</div>';
+            let timelineHTML = `
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <div class="glow-text" style="font-size: 24px; font-weight: 600; margin-bottom: 8px;">
+                        Coding Journey Timeline
+                    </div>
+                    <div style="color: #7d8590; font-size: 16px;">
+                        Peak month: ${maxCommits} commits • Total: ${totalCommits.toLocaleString()} commits
+                    </div>
+                </div>
+                <div style="padding: 20px; background: rgba(33, 38, 45, 0.3); border-radius: 12px; backdrop-filter: blur(10px);">
+            `;
             
-            sortedMonths.forEach(month => {
+            sortedMonths.forEach((month, index) => {
                 const count = commitsByMonth[month];
                 const percentage = (count / maxCommits) * 100;
+                const [year, monthNum] = month.split('-');
+                const monthName = new Date(year, monthNum - 1).toLocaleDateString('en', { month: 'short', year: 'numeric' });
                 
                 timelineHTML += `
-                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                        <div style="width: 80px; font-size: 12px; color: #7d8590;">${month}</div>
-                        <div style="flex: 1; background: #161b22; height: 20px; border-radius: 4px; margin: 0 12px; position: relative; overflow: hidden;">
-                            <div style="background: linear-gradient(90deg, #1f883d, #26a641); height: 100%; width: ${percentage}%; border-radius: 4px; transition: width 0.5s ease;"></div>
+                    <div style="display: flex; align-items: center; margin-bottom: 12px; animation-delay: ${index * 100}ms;" class="floating">
+                        <div style="width: 100px; font-size: 13px; color: #7d8590; font-weight: 600;">${monthName}</div>
+                        <div class="timeline-bar" style="flex: 1;">
+                            <div class="timeline-bar-fill" style="width: 0%; animation-delay: ${index * 200}ms;" data-width="${percentage}%"></div>
                         </div>
-                        <div style="width: 50px; text-align: right; font-size: 12px; color: #f0f6fc;">${count}</div>
+                        <div style="width: 60px; text-align: right; font-size: 14px; color: #f0f6fc; font-weight: 600; text-shadow: 0 0 10px rgba(31, 136, 61, 0.5);">${count}</div>
                     </div>
                 `;
             });
             
+            timelineHTML += '</div>';
             container.innerHTML = timelineHTML;
+            
+            // Animate bars
+            setTimeout(() => {
+                document.querySelectorAll('.timeline-bar-fill').forEach(bar => {
+                    bar.style.width = bar.dataset.width;
+                });
+            }, 100);
         }
 
         function createBubbleChart(container) {
             const repoSizes = allCommitData.map(repo => ({
                 name: repo.repo.name,
                 commits: repo.commits.length,
-                language: repo.repo.language || 'Unknown'
+                language: repo.repo.language || 'Unknown',
+                lastCommit: Math.max(...repo.commits.map(c => new Date(c.commit.author.date)))
             })).sort((a, b) => b.commits - a.commits);
             
-            let bubblesHTML = '<div style="margin-bottom: 20px; color: #7d8590;">Repository sizes by commit count</div>';
-            bubblesHTML += '<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;">';
-            
+            const totalCommits = repoSizes.reduce((sum, repo) => sum + repo.commits, 0);
             const maxCommits = Math.max(...repoSizes.map(r => r.commits));
             
-            repoSizes.slice(0, 15).forEach(repo => {
-                const size = Math.max(40, (repo.commits / maxCommits) * 120);
-                const colors = {
-                    'JavaScript': '#f1e05a',
-                    'Python': '#3572A5',
-                    'TypeScript': '#2b7489',
-                    'HTML': '#e34c26',
-                    'CSS': '#563d7c',
-                    'Java': '#b07219',
-                    'Unknown': '#7d8590'
-                };
-                const color = colors[repo.language] || '#7d8590';
+            let bubblesHTML = `
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <div class="glow-text" style="font-size: 24px; font-weight: 600; margin-bottom: 8px;">
+                        Repository Universe
+                    </div>
+                    <div style="color: #7d8590; font-size: 16px;">
+                        ${repoSizes.length} repositories • Largest: ${maxCommits} commits
+                    </div>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; padding: 30px; background: rgba(33, 38, 45, 0.3); border-radius: 12px; backdrop-filter: blur(10px); min-height: 300px; align-items: center;">
+            `;
+            
+            const colors = {
+                'JavaScript': 'linear-gradient(135deg, #f1e05a 0%, #ffd700 100%)',
+                'Python': 'linear-gradient(135deg, #3572A5 0%, #4285f4 100%)',
+                'TypeScript': 'linear-gradient(135deg, #2b7489 0%, #3178c6 100%)',
+                'HTML': 'linear-gradient(135deg, #e34c26 0%, #ff6b35 100%)',
+                'CSS': 'linear-gradient(135deg, #563d7c 0%, #8b5cf6 100%)',
+                'Java': 'linear-gradient(135deg, #b07219 0%, #ed8936 100%)',
+                'C++': 'linear-gradient(135deg, #f34b7d 0%, #ff6b9d 100%)',
+                'C': 'linear-gradient(135deg, #555555 0%, #888888 100%)',
+                'Go': 'linear-gradient(135deg, #00ADD8 0%, #5dd9f5 100%)',
+                'Rust': 'linear-gradient(135deg, #dea584 0%, #f4a261 100%)',
+                'Unknown': 'linear-gradient(135deg, #7d8590 0%, #a6b3c7 100%)'
+            };
+            
+            repoSizes.slice(0, 20).forEach((repo, index) => {
+                const size = Math.max(50, Math.min(140, (repo.commits / maxCommits) * 120 + 40));
+                const color = colors[repo.language] || colors['Unknown'];
+                const percentage = ((repo.commits / totalCommits) * 100).toFixed(1);
                 
                 bubblesHTML += `
-                    <div style="
+                    <div class="bubble-item floating" style="
                         width: ${size}px; 
                         height: ${size}px; 
                         background: ${color}; 
                         border-radius: 50%; 
                         display: flex; 
+                        flex-direction: column;
                         align-items: center; 
                         justify-content: center; 
                         color: white; 
-                        font-size: 10px; 
+                        font-size: ${Math.max(10, size / 8)}px; 
                         text-align: center;
                         cursor: pointer;
-                        transition: transform 0.2s ease;
+                        animation-delay: ${index * 100}ms;
+                        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                        position: relative;
                         " 
-                        onmouseover="this.style.transform='scale(1.1)'" 
-                        onmouseout="this.style.transform='scale(1)'"
-                        title="${repo.name}: ${repo.commits} commits (${repo.language})">
-                        ${repo.name.substring(0, 8)}
+                        title="${repo.name}: ${repo.commits} commits (${repo.language}) - ${percentage}% of total">
+                        <div style="font-weight: 700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">
+                            ${repo.name.length > 8 ? repo.name.substring(0, 6) + '...' : repo.name}
+                        </div>
+                        <div style="font-size: ${Math.max(8, size / 12)}px; opacity: 0.9; margin-top: 2px;">
+                            ${repo.commits}
+                        </div>
+                        <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #7d8590; white-space: nowrap;">
+                            ${repo.language}
+                        </div>
                     </div>
                 `;
             });
@@ -870,6 +1221,7 @@
             const commits = getAllCommitsFlat();
             const hourDayData = {};
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const hours = Array.from({length: 24}, (_, i) => i);
             
             commits.forEach(commit => {
                 const date = new Date(commit.commit.author.date);
@@ -880,79 +1232,170 @@
             });
             
             const maxCommits = Math.max(...Object.values(hourDayData));
+            const totalCommits = Object.values(hourDayData).reduce((a, b) => a + b, 0);
             
-            let heatmapHTML = '<div style="margin-bottom: 20px; color: #7d8590;">When you code most (hour vs day of week)</div>';
-            heatmapHTML += '<div style="display: grid; grid-template-columns: auto repeat(24, 1fr); gap: 2px; font-size: 10px;">';
+            // Find peak time
+            let peakTime = '';
+            let peakCommits = 0;
+            Object.entries(hourDayData).forEach(([key, count]) => {
+                if (count > peakCommits) {
+                    peakCommits = count;
+                    const [day, hour] = key.split('-');
+                    peakTime = `${days[day]} ${hour}:00`;
+                }
+            });
+            
+            let heatmapHTML = `
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <div class="glow-text" style="font-size: 24px; font-weight: 600; margin-bottom: 8px;">
+                        Coding Time Patterns
+                    </div>
+                    <div style="color: #7d8590; font-size: 16px;">
+                        Peak time: ${peakTime} (${peakCommits} commits) • Total sessions: ${totalCommits}
+                    </div>
+                </div>
+                <div style="padding: 30px; background: rgba(33, 38, 45, 0.3); border-radius: 12px; backdrop-filter: blur(10px);">
+                    <div style="display: grid; grid-template-columns: auto repeat(24, 1fr); gap: 3px; font-size: 11px;">
+            `;
             
             // Hour headers
-            heatmapHTML += '<div></div>'; // Empty corner
-            for (let hour = 0; hour < 24; hour++) {
-                heatmapHTML += `<div style="text-align: center; color: #7d8590; padding: 2px;">${hour}</div>`;
-            }
+            heatmapHTML += '<div style="padding: 4px;"></div>'; // Empty corner
+            hours.forEach(hour => {
+                heatmapHTML += `<div style="text-align: center; color: #7d8590; padding: 4px; font-weight: 600;">${hour}</div>`;
+            });
             
             // Day rows
-            for (let day = 0; day < 7; day++) {
-                heatmapHTML += `<div style="color: #7d8590; padding: 2px; text-align: right;">${days[day]}</div>`;
+            days.forEach((dayName, dayIndex) => {
+                heatmapHTML += `<div style="color: #7d8590; padding: 4px; text-align: right; font-weight: 600;">${dayName}</div>`;
                 
-                for (let hour = 0; hour < 24; hour++) {
-                    const key = `${day}-${hour}`;
+                hours.forEach(hour => {
+                    const key = `${dayIndex}-${hour}`;
                     const commits = hourDayData[key] || 0;
                     const intensity = commits / maxCommits;
                     
                     let bgColor = '#161b22';
+                    let shadow = 'none';
                     if (commits > 0) {
-                        const alpha = Math.max(0.2, intensity);
+                        const alpha = Math.max(0.3, intensity);
                         bgColor = `rgba(31, 136, 61, ${alpha})`;
+                        shadow = `0 0 ${intensity * 15}px rgba(31, 136, 61, ${intensity * 0.8})`;
                     }
                     
                     heatmapHTML += `
-                        <div style="
-                            width: 12px; 
-                            height: 12px; 
+                        <div class="heatmap-cell" style="
+                            width: 16px; 
+                            height: 16px; 
                             background: ${bgColor}; 
-                            border-radius: 2px; 
+                            border-radius: 3px; 
                             cursor: pointer;
+                            box-shadow: ${shadow};
+                            border: 1px solid rgba(33, 38, 45, 0.5);
                             " 
-                            title="${days[day]} ${hour}:00 - ${commits} commits">
+                            title="${dayName} ${hour}:00 - ${commits} commits">
                         </div>
                     `;
-                }
-            }
+                });
+            });
             
-            heatmapHTML += '</div>';
+            heatmapHTML += '</div></div>';
             container.innerHTML = heatmapHTML;
         }
 
         function showRawData(container) {
-            let rawHTML = '<div style="margin-bottom: 20px; color: #7d8590;">Raw commit data from your repositories</div>';
+            const totalCommits = allCommitData.reduce((sum, repo) => sum + repo.commits.length, 0);
             
-            allCommitData.slice(0, 10).forEach(repo => {
+            let rawHTML = `
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <div class="glow-text" style="font-size: 24px; font-weight: 600; margin-bottom: 8px;">
+                        Raw Commit History
+                    </div>
+                    <div style="color: #7d8590; font-size: 16px;">
+                        Deep dive into your ${totalCommits.toLocaleString()} commits across ${allCommitData.length} repositories
+                    </div>
+                </div>
+            `;
+            
+            allCommitData.slice(0, 12).forEach((repo, index) => {
+                const lastCommit = new Date(Math.max(...repo.commits.map(c => new Date(c.commit.author.date))));
+                const firstCommit = new Date(Math.min(...repo.commits.map(c => new Date(c.commit.author.date))));
+                const daysSinceFirst = Math.ceil((lastCommit - firstCommit) / (1000 * 60 * 60 * 24));
+                
                 rawHTML += `
-                    <div class="repo-section">
-                        <div class="repo-header">
-                            <span class="repo-name">${repo.repo.name}</span>
-                            <span class="commit-count">${repo.commits.length} commits</span>
+                    <div class="data-card floating" style="animation-delay: ${index * 100}ms;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="font-size: 18px; font-weight: 700; color: #1f6feb; text-shadow: 0 0 10px rgba(31, 111, 235, 0.5);">
+                                    ${repo.repo.name}
+                                </span>
+                                <span style="background: linear-gradient(135deg, #1f883d 0%, #39d353 100%); color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                    ${repo.commits.length} commits
+                                </span>
+                                ${repo.repo.language ? `<span style="background: rgba(31, 111, 235, 0.2); color: #1f6feb; padding: 4px 8px; border-radius: 8px; font-size: 11px; border: 1px solid rgba(31, 111, 235, 0.3);">${repo.repo.language}</span>` : ''}
+                            </div>
+                            <div style="text-align: right; color: #7d8590; font-size: 12px;">
+                                <div>Active for ${daysSinceFirst} days</div>
+                                <div>Last: ${lastCommit.toLocaleDateString()}</div>
+                            </div>
                         </div>
-                        <div class="commit-data">
+                        <div style="background: rgba(13, 17, 23, 0.8); border-radius: 8px; padding: 16px; max-height: 200px; overflow-y: auto;">
                 `;
                 
-                repo.commits.slice(0, 5).forEach(commit => {
+                repo.commits.slice(0, 6).forEach((commit, commitIndex) => {
                     const date = new Date(commit.commit.author.date);
+                    const message = commit.commit.message.split('\n')[0];
+                    
                     rawHTML += `
-                        <div class="commit-item">
-                            <div class="commit-sha">${commit.sha.substring(0, 7)}</div>
-                            <div class="commit-message">${commit.commit.message.split('\n')[0]}</div>
-                            <div class="commit-meta">${date.toLocaleDateString()} ${date.toLocaleTimeString()}</div>
+                        <div style="
+                            display: flex; 
+                            align-items: flex-start; 
+                            gap: 12px; 
+                            padding: 8px 0; 
+                            border-bottom: 1px solid rgba(33, 38, 45, 0.5);
+                            transition: all 0.3s ease;
+                            border-radius: 4px;
+                            margin-bottom: 4px;
+                        " onmouseover="this.style.background='rgba(31, 111, 235, 0.1)'; this.style.transform='translateX(4px)'" onmouseout="this.style.background='transparent'; this.style.transform='translateX(0)'">
+                            <code style="
+                                background: linear-gradient(135deg, #1f6feb 0%, #0969da 100%); 
+                                color: white; 
+                                padding: 2px 6px; 
+                                border-radius: 4px; 
+                                font-size: 10px; 
+                                font-weight: 600;
+                                box-shadow: 0 2px 8px rgba(31, 111, 235, 0.3);
+                            ">${commit.sha.substring(0, 7)}</code>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="color: #f0f6fc; font-size: 13px; font-weight: 500; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    ${message.length > 60 ? message.substring(0, 60) + '...' : message}
+                                </div>
+                                <div style="color: #7d8590; font-size: 11px;">
+                                    ${date.toLocaleDateString()} ${date.toLocaleTimeString()} • ${commit.commit.author.name}
+                                </div>
+                            </div>
                         </div>
                     `;
                 });
                 
-                if (repo.commits.length > 5) {
-                    rawHTML += `<div class="commit-item" style="font-style: italic; color: #7d8590;">... and ${repo.commits.length - 5} more commits</div>`;
+                if (repo.commits.length > 6) {
+                    rawHTML += `
+                        <div style="text-align: center; padding: 12px; color: #7d8590; font-style: italic; background: rgba(33, 38, 45, 0.3); border-radius: 6px; margin-top: 8px;">
+                            ... and ${repo.commits.length - 6} more commits in this repository
+                        </div>
+                    `;
                 }
                 
                 rawHTML += '</div></div>';
             });
+            
+            if (allCommitData.length > 12) {
+                rawHTML += `
+                    <div style="text-align: center; padding: 30px; color: #7d8590; font-size: 16px; background: rgba(33, 38, 45, 0.3); border-radius: 12px; margin-top: 20px;">
+                        <div style="font-size: 48px; margin-bottom: 12px;">📚</div>
+                        <div>Showing top 12 repositories</div>
+                        <div style="font-size: 14px; margin-top: 4px;">You have ${allCommitData.length - 12} more repositories with commits</div>
+                    </div>
+                `;
+            }
             
             container.innerHTML = rawHTML;
         }
