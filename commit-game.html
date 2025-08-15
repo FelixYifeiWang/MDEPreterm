@@ -1519,7 +1519,7 @@ function createObstacles() {
             // Only scroll if not fallen and not victorious
             if (!dino.isFallen && !victoryEffect.active) {
                 // Super Saiyan mode moves much faster!
-                const currentSpeed = dino.isSuperSaiyan ? gameSpeed * 4.0 : gameSpeed;
+                const currentSpeed = dino.isSuperSaiyan ? gameSpeed * 10.0 : gameSpeed;
                 scrollOffset += currentSpeed;
             }
         }
