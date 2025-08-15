@@ -221,6 +221,11 @@
             isInvincible: false,
             invincibilityTimer: 0,
             
+            // Death system
+            isDead: false,
+            deathTimer: 0,
+            deathRotation: 0,
+            
             // Animation (slower speeds)
             animationFrame: 0,
             runAnimationSpeed: 15,  // Keep same animation speed
@@ -539,7 +544,54 @@
             // Draw damage effect overlay (should not shake)
             drawDamageEffect();
             
+            // Draw game over screen if dead
+            if (dino.isDead) {
+                drawGameOver();
+            }
+            
             animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function drawGameOver() {
+            // Only show after dino has fully rotated
+            if (dino.deathTimer < 60) return;
+            
+            const alpha = Math.min(1, (dino.deathTimer - 60) / 60); // Fade in over 1 second
+            
+            // Dark overlay
+            gameCtx.fillStyle = `rgba(0, 0, 0, ${alpha * 0.7})`;
+            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            
+            // Game Over text
+            gameCtx.save();
+            gameCtx.globalAlpha = alpha;
+            
+            const centerX = gameCanvas.width / 2;
+            const centerY = gameCanvas.height / 2;
+            
+            // Main "GAME OVER" text
+            gameCtx.fillStyle = '#ff4757';
+            gameCtx.font = 'bold 60px Arial';
+            gameCtx.textAlign = 'center';
+            gameCtx.textBaseline = 'middle';
+            gameCtx.fillText('GAME OVER', centerX, centerY - 60);
+            
+            // Subtitle
+            gameCtx.fillStyle = '#f0f6fc';
+            gameCtx.font = 'bold 24px Arial';
+            gameCtx.fillText('Fallen in the Coding Forest 🌳⚰️', centerX, centerY - 10);
+            
+            // Restart instruction
+            gameCtx.fillStyle = '#7d8590';
+            gameCtx.font = '18px Arial';
+            gameCtx.fillText('Press R to restart your journey', centerX, centerY + 30);
+            
+            // Final HP info
+            gameCtx.fillStyle = '#ff4757';
+            gameCtx.font = '16px monospace';
+            gameCtx.fillText(`Final HP: 0/${dino.maxHp}`, centerX, centerY + 60);
+            
+            gameCtx.restore();
         }
 
         function drawDamageEffect() {
@@ -550,6 +602,12 @@
         }
 
         function updateGame() {
+            // If dino is dead, only update death animation
+            if (dino.isDead) {
+                updateDeathAnimation();
+                return; // Stop all other game updates
+            }
+            
             const rightEdgeOffset = scrollOffset + gameCanvas.width;
             const rightEdgeTimelineDays = Math.floor(rightEdgeOffset / timeScale);
             const rightEdgeDate = new Date(startDate);
@@ -586,7 +644,25 @@
             updateObstacles();
             updateScreenShake();
             checkCollisions();
-            scrollOffset += gameSpeed;
+            
+            // Only scroll if not dead
+            if (!dino.isDead) {
+                scrollOffset += gameSpeed;
+            }
+        }
+
+        function updateDeathAnimation() {
+            dino.deathTimer++;
+            
+            // Rotate the dino over 60 frames (1 second)
+            if (dino.deathTimer <= 60) {
+                dino.deathRotation = (dino.deathTimer / 60) * (Math.PI / 2); // 90 degrees
+            }
+            
+            // Make sure dino is on the ground
+            dino.y = dino.groundY;
+            dino.isJumping = false;
+            dino.jumpVelocity = 0;
         }
 
         function updateObstacles() {
@@ -601,12 +677,14 @@
         }
 
         function checkCollisions() {
-            if (dino.isInvincible) {
-                dino.invincibilityTimer--;
-                if (dino.invincibilityTimer <= 0) {
-                    dino.isInvincible = false;
+            if (dino.isInvincible || dino.isDead) {
+                if (dino.isInvincible) {
+                    dino.invincibilityTimer--;
+                    if (dino.invincibilityTimer <= 0) {
+                        dino.isInvincible = false;
+                    }
                 }
-                return; // Skip collision checking during invincibility
+                return; // Skip collision checking during invincibility or death
             }
             
             obstacles.forEach(obstacle => {
@@ -633,16 +711,28 @@
                         
                         console.log(`💥💥 COLLISION! Hit ${obstacle.commits}-commit obstacle! HP: ${dino.hp}/${dino.maxHp} - SHAKE: ${totalShake.toFixed(1)}`);
                         
-                        // Check for game over
+                        // Check for death
                         if (dino.hp <= 0) {
-                            console.log('💀 Game Over!');
-                            addScreenShake(25, 90); // Big shake for game over (1.5 seconds)
+                            triggerDeath();
                         }
                         
                         return; // Only hit one obstacle per frame
                     }
                 }
             });
+        }
+
+        function triggerDeath() {
+            dino.isDead = true;
+            dino.deathTimer = 0;
+            dino.deathRotation = 0;
+            dino.isInvincible = false;
+            dino.isJumping = false;
+            
+            // Big death shake
+            addScreenShake(25, 90); // 1.5 seconds of dramatic shake
+            
+            console.log('💀💀 GAME OVER! Dino has fallen in the coding forest... 🌳⚰️');
         }
 
         function updateDino() {
@@ -799,35 +889,57 @@
             try {
                 let currentSprite;
                 
-                if (dino.isJumping) {
+                if (dino.isJumping && !dino.isDead) {
                     // Use run3.png (single jump frame)
                     currentSprite = dino.sprites.jumping;
                 } else {
-                    // Cycle through 4 running frames
-                    const frameIndex = Math.floor(dino.animationFrame / dino.runAnimationSpeed) % 4;
+                    // Cycle through 4 running frames (or use frame 0 when dead)
+                    const frameIndex = dino.isDead ? 0 : Math.floor(dino.animationFrame / dino.runAnimationSpeed) % 4;
                     currentSprite = dino.sprites.running[frameIndex];
                 }
                 
-                // Apply invincibility effect (flashing)
-                if (dino.isInvincible && Math.floor(dino.invincibilityTimer / 10) % 2 === 0) {
-                    gameCtx.globalAlpha = 0.5; // Make dino semi-transparent when flashing
-                }
+                gameCtx.save();
                 
-                if (currentSprite && currentSprite.complete) {
-                    gameCtx.drawImage(currentSprite, dino.x, dino.y, dino.width, dino.height);
+                // Apply death effects
+                if (dino.isDead) {
+                    // Move to center of dino for rotation
+                    gameCtx.translate(dino.x + dino.width/2, dino.y + dino.height/2);
+                    gameCtx.rotate(dino.deathRotation);
+                    
+                    // Apply grayscale filter
+                    gameCtx.filter = 'grayscale(100%) contrast(0.8)';
+                    
+                    // Draw sprite centered (because we translated to center)
+                    if (currentSprite && currentSprite.complete) {
+                        gameCtx.drawImage(currentSprite, -dino.width/2, -dino.height/2, dino.width, dino.height);
+                    } else {
+                        // Fallback: draw simple rectangle if sprite fails
+                        gameCtx.fillStyle = '#666666'; // Gray for death
+                        gameCtx.fillRect(-dino.width/2, -dino.height/2, dino.width, dino.height);
+                    }
                 } else {
-                    // Fallback: draw simple rectangle if sprite fails
-                    gameCtx.fillStyle = '#39d353';
-                    gameCtx.fillRect(dino.x, dino.y, dino.width, dino.height);
+                    // Normal alive drawing
+                    
+                    // Apply invincibility effect (flashing)
+                    if (dino.isInvincible && Math.floor(dino.invincibilityTimer / 10) % 2 === 0) {
+                        gameCtx.globalAlpha = 0.5; // Make dino semi-transparent when flashing
+                    }
+                    
+                    if (currentSprite && currentSprite.complete) {
+                        gameCtx.drawImage(currentSprite, dino.x, dino.y, dino.width, dino.height);
+                    } else {
+                        // Fallback: draw simple rectangle if sprite fails
+                        gameCtx.fillStyle = '#39d353';
+                        gameCtx.fillRect(dino.x, dino.y, dino.width, dino.height);
+                    }
                 }
                 
-                // Reset alpha
-                gameCtx.globalAlpha = 1.0;
+                gameCtx.restore();
                 
             } catch (error) {
                 console.warn('Dino drawing error:', error);
                 // Fallback: draw simple rectangle
-                gameCtx.fillStyle = '#39d353';
+                gameCtx.fillStyle = dino.isDead ? '#666666' : '#39d353';
                 gameCtx.fillRect(dino.x, dino.y, dino.width, dino.height);
             }
         }
@@ -1038,6 +1150,12 @@
                 if (event.code === 'Space') {
                     event.preventDefault();
                     
+                    // Can't jump when dead
+                    if (dino.isDead) {
+                        console.log('💀 Cannot jump - dino is dead! Press R to restart.');
+                        return;
+                    }
+                    
                     // Check if we can jump (either on ground or have double jump available)
                     if (dino.jumpsRemaining > 0) {
                         // First jump or double jump
@@ -1062,26 +1180,72 @@
                 
                 if (event.code === 'ArrowUp') {
                     event.preventDefault();
-                    gameSpeed = Math.min(3.0, gameSpeed + 0.2);
-                    console.log(`⬆️ Speed increased to ${gameSpeed.toFixed(1)}`);
+                    if (!dino.isDead) {
+                        gameSpeed = Math.min(3.0, gameSpeed + 0.2);
+                        console.log(`⬆️ Speed increased to ${gameSpeed.toFixed(1)}`);
+                    }
                 }
                 
                 if (event.code === 'ArrowDown') {
                     event.preventDefault();
-                    gameSpeed = Math.max(0.2, gameSpeed - 0.2);
-                    console.log(`⬇️ Speed decreased to ${gameSpeed.toFixed(1)}`);
+                    if (!dino.isDead) {
+                        gameSpeed = Math.max(0.2, gameSpeed - 0.2);
+                        console.log(`⬇️ Speed decreased to ${gameSpeed.toFixed(1)}`);
+                    }
                 }
                 
                 if (event.code === 'KeyR') {
                     event.preventDefault();
-                    gameSpeed = 1.2;
-                    console.log(`🔄 Speed reset to ${gameSpeed}`);
+                    if (dino.isDead) {
+                        // Restart the game
+                        restartGame();
+                    } else {
+                        gameSpeed = 1.2;
+                        console.log(`🔄 Speed reset to ${gameSpeed}`);
+                    }
                 }
             } catch (error) {
                 console.error('Keyboard event error:', error);
                 // Don't let keyboard errors crash the game
             }
         });
+
+        function restartGame() {
+            console.log('🔄 Restarting game...');
+            
+            // Reset dino state
+            dino.hp = dino.maxHp;
+            dino.isDead = false;
+            dino.deathTimer = 0;
+            dino.deathRotation = 0;
+            dino.isJumping = false;
+            dino.jumpVelocity = 0;
+            dino.y = dino.groundY;
+            dino.jumpsRemaining = 2;
+            dino.hasDoubleJumped = false;
+            dino.isInvincible = false;
+            dino.invincibilityTimer = 0;
+            dino.animationFrame = 0;
+            
+            // Reset game state
+            scrollOffset = 0;
+            gameSpeed = 1.2;
+            currentYear = null;
+            yearChangeText = '';
+            yearChangeTimer = 0;
+            yearChangeAlpha = 0;
+            
+            // Reset screen effects
+            screenShake = { intensity: 0, duration: 0, x: 0, y: 0 };
+            damageEffect = { alpha: 0, duration: 0 };
+            
+            // Reset obstacle passed states
+            obstacles.forEach(obstacle => {
+                obstacle.passed = false;
+            });
+            
+            console.log('✨ Game restarted! Good luck in the coding forest! 🌳');
+        }
 
         // Click to pause/resume
         gameCanvas.addEventListener('click', function() {
