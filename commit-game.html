@@ -208,6 +208,12 @@
         let scrollOffset = 0;
         let animationId = null;
         
+        // Year change tracking
+        let currentYear = null;
+        let yearChangeText = '';
+        let yearChangeTimer = 0;
+        let yearChangeAlpha = 0;
+        
         // Time axis variables
         let timelineData = [];
         let timeScale = 1; // pixels per day
@@ -382,13 +388,51 @@
             drawGround();
             drawTimeAxis();
             drawUI();
+            drawYearChange();
             
             // Continue loop
             animationId = requestAnimationFrame(gameLoop);
         }
 
         function updateGame() {
-            // Move the world (scroll)
+            // Calculate current timeline position
+            const currentTimelineDays = Math.floor(scrollOffset / timeScale);
+            const currentDate = new Date(startDate);
+            currentDate.setDate(currentDate.getDate() + currentTimelineDays);
+            
+            // Check if we've reached the end
+            const maxScrollOffset = totalDays * timeScale;
+            if (scrollOffset >= maxScrollOffset) {
+                scrollOffset = maxScrollOffset; // Stop at the end
+                console.log('🏁 Reached the end of your coding timeline!');
+                return; // Don't continue scrolling
+            }
+            
+            // Check for year changes
+            if (currentDate >= startDate && currentDate <= endDate) {
+                const newYear = currentDate.getFullYear();
+                if (currentYear === null) {
+                    currentYear = newYear; // Initialize
+                } else if (currentYear !== newYear) {
+                    // Year changed!
+                    console.log(`🎆 Year changed to ${newYear}!`);
+                    currentYear = newYear;
+                    yearChangeText = `${newYear}`;
+                    yearChangeTimer = 180; // Show for 3 seconds at 60fps
+                    yearChangeAlpha = 1.0;
+                }
+            }
+            
+            // Update year change animation
+            if (yearChangeTimer > 0) {
+                yearChangeTimer--;
+                // Fade out in the last 60 frames (1 second)
+                if (yearChangeTimer < 60) {
+                    yearChangeAlpha = yearChangeTimer / 60;
+                }
+            }
+            
+            // Move the world (scroll) only if not at the end
             scrollOffset += gameSpeed;
         }
 
@@ -510,8 +554,11 @@
             gameCtx.fillRect(progressX - 5, progressY - 5, progressBarWidth + 10, progressBarHeight + 10);
             
             // Progress
-            const progress = Math.min(1, scrollOffset / (totalDays * timeScale));
-            gameCtx.fillStyle = '#39d353';
+            const maxScrollOffset = totalDays * timeScale;
+            const progress = Math.min(1, scrollOffset / maxScrollOffset);
+            const isComplete = progress >= 1;
+            
+            gameCtx.fillStyle = isComplete ? '#ff6b6b' : '#39d353';
             gameCtx.fillRect(progressX, progressY, progressBarWidth * progress, progressBarHeight);
             
             // Border
@@ -523,17 +570,87 @@
             gameCtx.fillStyle = '#f0f6fc';
             gameCtx.font = '12px monospace';
             gameCtx.textAlign = 'right';
-            gameCtx.fillText(`${(progress * 100).toFixed(1)}% complete`, progressX + progressBarWidth, progressY - 8);
+            if (isComplete) {
+                gameCtx.fillText('Journey Complete! 🏁', progressX + progressBarWidth, progressY - 8);
+            } else {
+                gameCtx.fillText(`${(progress * 100).toFixed(1)}% complete`, progressX + progressBarWidth, progressY - 8);
+            }
             
-            // Speed indicator
-            const daysPerSecond = (gameSpeed * 60) / timeScale; // 60fps
-            gameCtx.textAlign = 'left';
-            gameCtx.fillText(`Speed: ${daysPerSecond.toFixed(1)} days/sec`, 20, 60);
+            // Speed indicator (only show if not complete)
+            if (!isComplete) {
+                const daysPerSecond = (gameSpeed * 60) / timeScale; // 60fps
+                gameCtx.textAlign = 'left';
+                gameCtx.fillText(`Speed: ${daysPerSecond.toFixed(1)} days/sec`, 20, 60);
+            } else {
+                gameCtx.textAlign = 'left';
+                gameCtx.fillStyle = '#ff6b6b';
+                gameCtx.fillText('🎯 Timeline Complete', 20, 60);
+            }
             
             // Controls hint
             gameCtx.fillStyle = '#7d8590';
             gameCtx.font = '11px monospace';
             gameCtx.fillText('↑/↓ arrows: adjust speed • R: reset speed • Click: pause/resume', 20, gameCanvas.height - 20);
+        }
+
+        function drawYearChange() {
+            if (yearChangeTimer <= 0) return;
+            
+            // Calculate position and size
+            const centerX = gameCanvas.width / 2;
+            const centerY = gameCanvas.height / 2 - 50;
+            
+            // Create dramatic scaling effect
+            const scaleProgress = Math.min(1, (180 - yearChangeTimer) / 30); // Scale up over first 0.5 seconds
+            const scale = 0.5 + (scaleProgress * 0.5); // Scale from 0.5 to 1.0
+            
+            // Save context for transformations
+            gameCtx.save();
+            
+            // Semi-transparent background
+            gameCtx.fillStyle = `rgba(13, 17, 23, ${yearChangeAlpha * 0.8})`;
+            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            
+            // Move to center and scale
+            gameCtx.translate(centerX, centerY);
+            gameCtx.scale(scale, scale);
+            
+            // Draw year text with gradient effect
+            const fontSize = 120;
+            gameCtx.font = `bold ${fontSize}px Arial`;
+            gameCtx.textAlign = 'center';
+            gameCtx.textBaseline = 'middle';
+            
+            // Text shadow
+            gameCtx.fillStyle = `rgba(0, 0, 0, ${yearChangeAlpha * 0.5})`;
+            gameCtx.fillText(yearChangeText, 5, 5);
+            
+            // Main text with gradient
+            const gradient = gameCtx.createLinearGradient(0, -fontSize/2, 0, fontSize/2);
+            gradient.addColorStop(0, `rgba(31, 111, 235, ${yearChangeAlpha})`);
+            gradient.addColorStop(0.5, `rgba(255, 255, 255, ${yearChangeAlpha})`);
+            gradient.addColorStop(1, `rgba(31, 136, 61, ${yearChangeAlpha})`);
+            
+            gameCtx.fillStyle = gradient;
+            gameCtx.fillText(yearChangeText, 0, 0);
+            
+            // Glow effect
+            gameCtx.shadowColor = `rgba(31, 111, 235, ${yearChangeAlpha * 0.8})`;
+            gameCtx.shadowBlur = 20;
+            gameCtx.strokeStyle = `rgba(255, 255, 255, ${yearChangeAlpha * 0.3})`;
+            gameCtx.lineWidth = 3;
+            gameCtx.strokeText(yearChangeText, 0, 0);
+            
+            // Reset shadow
+            gameCtx.shadowBlur = 0;
+            
+            // Subtitle
+            gameCtx.font = 'bold 24px Arial';
+            gameCtx.fillStyle = `rgba(125, 133, 144, ${yearChangeAlpha})`;
+            gameCtx.fillText('New Year!', 0, 60);
+            
+            // Restore context
+            gameCtx.restore();
         }
 
         function updateLoadingText(text) {
