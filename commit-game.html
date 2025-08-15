@@ -204,7 +204,7 @@
         let gameRunning = false;
         
         // Game mechanics
-        let gameSpeed = 0.3; // Much slower - about 1-2 days per second
+        let gameSpeed = 0.15; // Even slower - about 1 day per second
         let scrollOffset = 0;
         let animationId = null;
         
@@ -472,8 +472,7 @@
                     
                     // Draw date label
                     const dateLabel = markerDate.toLocaleDateString('en', { 
-                        month: 'short', 
-                        year: markerDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined 
+                        month: 'short'
                     });
                     
                     gameCtx.fillStyle = '#7d8590';
@@ -582,7 +581,7 @@
             // Reset speed
             if (event.code === 'KeyR') {
                 event.preventDefault();
-                gameSpeed = 0.3;
+                gameSpeed = 0.15;
                 console.log(`🔄 Speed reset to ${gameSpeed}`);
             }
         });
