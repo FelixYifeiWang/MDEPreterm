@@ -640,9 +640,10 @@
         }
         
         // Game mechanics
-        let gameSpeed = 1.2; // Faster speed
+        let gameSpeed = 1.8; // default speed bumped for laptops // Faster speed
         let scrollOffset = 0;
         let animationId = null;
+        const SPEED_UNIT = 120; // px per second per 1.0 gameSpeed (was 60)
         let lastTimestamp = null; // for time-based updates (seconds)
         
         // Screen shake system
@@ -1541,7 +1542,7 @@ function createObstacles() {
             if (!dino.isFallen && !victoryEffect.active) {
                 // Super Saiyan mode moves much faster!
                 const currentSpeed = dino.isSuperSaiyan ? gameSpeed * 10.0 : gameSpeed;
-                const pixelsPerSecond = currentSpeed * 60; // calibrated to previous 60 FPS tuning
+                const pixelsPerSecond = currentSpeed * SPEED_UNIT; // calibrated for laptops
                 scrollOffset += pixelsPerSecond * dt;
             }
         }
