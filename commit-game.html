@@ -383,12 +383,10 @@
             });
             
             // Create obstacles from monthly data
-            // Reference: Intense engineers average 10-20 commits/day
-            // Monthly: 300-600 commits (normal intense), 600-900+ (extreme crunch)
+            // Scaling: 100 commits = ~200px (within one jump), 500+ commits can be extreme
             Object.values(monthlyCommits).forEach(month => {
                 if (month.commits > 10) { // Lower threshold for more obstacles
-                    // Scale height more aggressively - can go way beyond screen
-                    const obstacleHeight = Math.min(800, month.commits * 8); // Much taller scaling
+                    const obstacleHeight = Math.min(600, month.commits * 2); // More reasonable scaling
                     const groundY = gameCanvas.height - 100;
                     
                     obstacles.push({
@@ -402,20 +400,26 @@
                 }
             });
             
-            console.log(`🚧 Created ${obstacles.length} obstacles (can be taller than screen for intense months)`);
+            console.log(`🚧 Created ${obstacles.length} obstacles (100 commits ≈ one jump height)`);
         }
 
         function addScreenShake(intensity, duration) {
             screenShake.intensity = intensity;
             screenShake.duration = duration;
+            console.log(`📳 Screen shake added: intensity=${intensity}, duration=${duration}`);
         }
 
         function updateScreenShake() {
             if (screenShake.duration > 0) {
                 screenShake.duration--;
                 const shakeAmount = screenShake.intensity * (screenShake.duration / 30); // Decay over time
-                screenShake.x = (Math.random() - 0.5) * shakeAmount;
-                screenShake.y = (Math.random() - 0.5) * shakeAmount;
+                screenShake.x = (Math.random() - 0.5) * shakeAmount * 2; // Make shake more noticeable
+                screenShake.y = (Math.random() - 0.5) * shakeAmount * 2;
+                
+                // Debug log for first few frames
+                if (screenShake.duration > 25) {
+                    console.log(`📳 Shaking: x=${screenShake.x.toFixed(1)}, y=${screenShake.y.toFixed(1)}`);
+                }
             } else {
                 screenShake.x = 0;
                 screenShake.y = 0;
@@ -614,18 +618,21 @@
                         dino.isInvincible = true;
                         dino.invincibilityTimer = 90; // 1.5 seconds of invincibility at 60fps
                         
-                        // Add screen shake based on obstacle size (commit intensity)
-                        const shakeIntensity = Math.min(20, obstacle.commits / 10); // Scale shake with commits
-                        addScreenShake(shakeIntensity, 20); // 20 frames of shake
+                        // Add screen shake - make it more noticeable
+                        const baseShake = 8; // Base shake intensity
+                        const commitShake = Math.min(12, obstacle.commits / 20); // Additional shake based on commits
+                        const totalShake = baseShake + commitShake;
+                        addScreenShake(totalShake, 30); // 30 frames of shake (0.5 seconds)
                         
-                        console.log(`💥 Hit ${obstacle.commits}-commit obstacle! HP: ${dino.hp}/${dino.maxHp} 📳`);
+                        console.log(`💥💥 COLLISION! Hit ${obstacle.commits}-commit obstacle! HP: ${dino.hp}/${dino.maxHp} - SHAKE: ${totalShake.toFixed(1)}`);
                         
                         // Check for game over
                         if (dino.hp <= 0) {
                             console.log('💀 Game Over!');
-                            addScreenShake(30, 60); // Big shake for game over
-                            // Could add game over logic here
+                            addScreenShake(25, 90); // Big shake for game over (1.5 seconds)
                         }
+                        
+                        return; // Only hit one obstacle per frame
                     }
                 }
             });
@@ -670,7 +677,7 @@
                 // Only draw obstacles that are visible on screen
                 if (obstacleScreenX > -obstacle.width && obstacleScreenX < gameCanvas.width + obstacle.width) {
                     // Create gradient based on commit count
-                    const intensity = Math.min(1, obstacle.commits / 200); // Adjusted for higher commit counts
+                    const intensity = Math.min(1, obstacle.commits / 300); // Adjusted for new scaling
                     const gradient = gameCtx.createLinearGradient(0, obstacle.y, 0, obstacle.y + obstacle.height);
                     
                     // Color based on intensity: green for low, red for extreme
@@ -715,15 +722,19 @@
                     gameCtx.fillStyle = '#ffffff';
                     gameCtx.fillText(obstacle.commits.toString(), obstacleScreenX + obstacle.width / 2, textY);
                     
-                    // Add "EXTREME" label for very high commit counts (600+ commits/month)
-                    if (obstacle.commits >= 600) {
+                    // Add intensity labels with adjusted thresholds
+                    if (obstacle.commits >= 300) {
                         gameCtx.fillStyle = '#ff4757';
                         gameCtx.font = 'bold 10px monospace';
                         gameCtx.fillText('EXTREME', obstacleScreenX + obstacle.width / 2, textY + 15);
-                    } else if (obstacle.commits >= 300) {
+                    } else if (obstacle.commits >= 150) {
                         gameCtx.fillStyle = '#ffd700';
                         gameCtx.font = 'bold 10px monospace';
                         gameCtx.fillText('INTENSE', obstacleScreenX + obstacle.width / 2, textY + 15);
+                    } else if (obstacle.commits >= 75) {
+                        gameCtx.fillStyle = '#39d353';
+                        gameCtx.font = 'bold 10px monospace';
+                        gameCtx.fillText('ACTIVE', obstacleScreenX + obstacle.width / 2, textY + 15);
                     }
                 }
             });
