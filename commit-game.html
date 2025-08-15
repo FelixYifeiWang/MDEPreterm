@@ -213,7 +213,12 @@
             jumpPower: -15,
             groundY: 0, // Will be calculated
             animationFrame: 0,
-            animationSpeed: 8 // Frames between animation changes
+            animationSpeed: 10, // Frames between animation changes
+            sprites: {
+                running: [],
+                jumping: null
+            },
+            spritesLoaded: false
         };
 
         // Initialize the game
@@ -346,6 +351,9 @@
         function initializeGame() {
             updateLoadingText('Setting up game world...');
             
+            // Load dinosaur sprites
+            loadDinoSprites();
+            
             // Load high score
             const savedHighScore = localStorage.getItem('commitDinoHighScore') || 0;
             document.getElementById('highScore').textContent = savedHighScore;
@@ -455,60 +463,114 @@
             dino.animationFrame++;
         }
 
+        function loadDinoSprites() {
+            // For now, we'll create placeholder sprites programmatically
+            // You can replace these with actual PNG files
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 40;
+            canvas.height = 40;
+            
+            // Create simple placeholder running frames
+            for (let i = 0; i < 2; i++) {
+                const sprite = new Image();
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, 40, 40);
+                
+                // Draw simple dino shape (placeholder until you provide PNGs)
+                ctx.fillStyle = '#39d353';
+                
+                // Body
+                ctx.fillRect(8, 15, 24, 18);
+                
+                // Head
+                ctx.beginPath();
+                ctx.arc(12, 12, 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eye
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(10, 10, 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Legs (different positions for each frame)
+                ctx.fillStyle = '#26a641';
+                if (i === 0) {
+                    ctx.fillRect(12, 33, 3, 6); // Left leg
+                    ctx.fillRect(20, 35, 3, 6); // Right leg
+                } else {
+                    ctx.fillRect(12, 35, 3, 6); // Left leg
+                    ctx.fillRect(20, 33, 3, 6); // Right leg
+                }
+                
+                // Convert canvas to image
+                sprite.src = canvas.toDataURL();
+                dino.sprites.running.push(sprite);
+            }
+            
+            // Create jumping sprite (same as first running frame for now)
+            dino.sprites.jumping = dino.sprites.running[0];
+            dino.spritesLoaded = true;
+            
+            console.log('🖼️ Dino sprites loaded (placeholder - ready for your PNG files!)');
+        }
+
         function drawDino() {
+            if (!dino.spritesLoaded) return;
+            
             const ctx = gameCtx;
             
-            // Simple animation cycle for running (smoother)
-            const animCycle = Math.floor(dino.animationFrame / dino.animationSpeed) % 2;
+            // Choose sprite based on state
+            let currentSprite;
+            if (dino.isJumping) {
+                currentSprite = dino.sprites.jumping;
+            } else {
+                // Cycle through running animation
+                const frameIndex = Math.floor(dino.animationFrame / dino.animationSpeed) % dino.sprites.running.length;
+                currentSprite = dino.sprites.running[frameIndex];
+            }
             
-            // Dino colors
-            const bodyColor = '#39d353';
-            const accentColor = '#26a641';
-            const eyeColor = '#ffffff';
+            // Draw the sprite
+            if (currentSprite && currentSprite.complete) {
+                ctx.drawImage(currentSprite, dino.x, dino.y, dino.width, dino.height);
+            }
+        }
+
+        // Function to load your custom PNG sprites
+        function loadCustomSprites(runningFrameUrls, jumpingFrameUrl) {
+            dino.sprites.running = [];
+            dino.spritesLoaded = false;
             
-            ctx.save();
-            ctx.translate(dino.x, dino.y);
+            let loadedCount = 0;
+            const totalFrames = runningFrameUrls.length + 1;
             
-            // Main body (simple rectangle with rounded corners)
-            ctx.fillStyle = bodyColor;
-            ctx.beginPath();
-            ctx.roundRect(8, 15, 24, 18, 4);
-            ctx.fill();
+            // Load running frames
+            runningFrameUrls.forEach((url, index) => {
+                const img = new Image();
+                img.onload = () => {
+                    loadedCount++;
+                    if (loadedCount === totalFrames) {
+                        dino.spritesLoaded = true;
+                        console.log('🖼️ Custom dino sprites loaded!');
+                    }
+                };
+                img.src = url;
+                dino.sprites.running[index] = img;
+            });
             
-            // Head (circle)
-            ctx.fillStyle = bodyColor;
-            ctx.beginPath();
-            ctx.arc(12, 12, 10, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Eye (simple dot)
-            ctx.fillStyle = '#000000';
-            ctx.beginPath();
-            ctx.arc(9, 10, 2, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Simple tail
-            ctx.fillStyle = accentColor;
-            ctx.beginPath();
-            ctx.arc(35, 20, 4, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Legs (simple running animation - just alternate positions)
-            ctx.fillStyle = accentColor;
-            
-            // Left leg
-            const leftLegY = animCycle === 0 ? 35 : 33;
-            ctx.fillRect(12, leftLegY, 4, 8);
-            
-            // Right leg
-            const rightLegY = animCycle === 0 ? 33 : 35;
-            ctx.fillRect(20, rightLegY, 4, 8);
-            
-            // Simple arms
-            ctx.fillRect(6, 20, 3, 6);
-            ctx.fillRect(29, 20, 3, 6);
-            
-            ctx.restore();
+            // Load jumping frame
+            const jumpImg = new Image();
+            jumpImg.onload = () => {
+                loadedCount++;
+                if (loadedCount === totalFrames) {
+                    dino.spritesLoaded = true;
+                    console.log('🖼️ Custom dino sprites loaded!');
+                }
+            };
+            jumpImg.src = jumpingFrameUrl;
+            dino.sprites.jumping = jumpImg;
         }
 
         function clearCanvas() {
