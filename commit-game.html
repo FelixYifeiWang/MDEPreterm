@@ -669,6 +669,8 @@
         let timeScale = 1;
         let startDate = null;
         let endDate = null;
+        let dataStartDate = null;
+        let dataEndDate = null;
         let totalDays = 0;
         let currentSeason = 'spring';
         let targetSeason = 'spring';
@@ -822,6 +824,9 @@
             
             startDate = new Date(allCommits[0].date);
             endDate = new Date(allCommits[allCommits.length - 1].date);
+            // Store true data range (without buffer) for optimizer
+            dataStartDate = new Date(allCommits[0].date);
+            dataEndDate = new Date(allCommits[allCommits.length - 1].date);
             
             // Store the actual last commit date for victory flag
             const lastCommitDate = new Date(allCommits[allCommits.length - 1].date);
@@ -912,6 +917,14 @@
 
                 // Iterate month keys between start and end
                 Object.keys(monthMap).forEach(key => {
+                    // Skip buffer-only months (outside the true data window)
+                    if (dataStartDate && dataEndDate) {
+                        const [yStr, mStr] = key.split('-');
+                        const ym = parseInt(yStr,10) * 12 + parseInt(mStr,10);
+                        const firstYM = dataStartDate.getFullYear()*12 + dataStartDate.getMonth();
+                        const lastYM  = dataEndDate.getFullYear()*12 + dataEndDate.getMonth();
+                        if (ym < firstYM || ym > lastYM) { return; }
+                    }
                     const info = monthMap[key];
                     if (info.totalCommits > 0) return; // already has activity
 
