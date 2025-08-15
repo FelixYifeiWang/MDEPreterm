@@ -320,7 +320,7 @@
             
             // Calculate time scale to fit the screen
             const screenWidth = gameCanvas.width;
-            timeScale = Math.max(1, screenWidth / totalDays * 3); // 3x screen width for scrolling
+            timeScale = Math.max(5, screenWidth / totalDays * 15); // 15x screen width for much more spacing
             
             console.log(`📅 Timeline: ${totalDays} days, scale: ${timeScale} px/day`);
             console.log(`📊 Date range: ${startDate.toDateString()} → ${endDate.toDateString()}`);
