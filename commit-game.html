@@ -184,7 +184,7 @@
         let gameRunning = false;
         
         // Game mechanics
-        let gameSpeed = 0.8; // Normal speed - about 3-4 days per second
+        let gameSpeed = 1.2; // Faster speed - about 5-6 days per second
         let scrollOffset = 0;
         let animationId = null;
         
@@ -200,6 +200,21 @@
         let startDate = null;
         let endDate = null;
         let totalDays = 0;
+
+        // Dino character variables
+        let dino = {
+            x: 120, // Fixed position from left edge
+            y: 0, // Will be set to ground level
+            width: 40,
+            height: 40,
+            isJumping: false,
+            jumpVelocity: 0,
+            gravity: 0.8,
+            jumpPower: -15,
+            groundY: 0, // Will be calculated
+            animationFrame: 0,
+            animationSpeed: 8 // Frames between animation changes
+        };
 
         // Initialize the game
         window.addEventListener('load', function() {
@@ -363,6 +378,7 @@
             // Draw everything
             drawGround();
             drawTimeAxis();
+            drawDino();
             drawUI();
             drawYearChange();
             
@@ -409,8 +425,113 @@
                 }
             }
             
+            // Update dino physics
+            updateDino();
+            
             // Move the world (scroll) only if not at the end
             scrollOffset += gameSpeed;
+        }
+
+        function updateDino() {
+            // Set ground level
+            dino.groundY = gameCanvas.height - 100 - dino.height;
+            
+            // Handle jumping physics
+            if (dino.isJumping) {
+                dino.y += dino.jumpVelocity;
+                dino.jumpVelocity += dino.gravity;
+                
+                // Land back on ground
+                if (dino.y >= dino.groundY) {
+                    dino.y = dino.groundY;
+                    dino.isJumping = false;
+                    dino.jumpVelocity = 0;
+                }
+            } else {
+                dino.y = dino.groundY;
+            }
+            
+            // Update running animation
+            dino.animationFrame++;
+        }
+
+        function drawDino() {
+            const ctx = gameCtx;
+            
+            // Animation cycle for running
+            const animCycle = Math.floor(dino.animationFrame / dino.animationSpeed) % 4;
+            
+            // Dino body colors
+            const bodyColor = '#39d353';
+            const accentColor = '#26a641';
+            const eyeColor = '#ffffff';
+            
+            ctx.save();
+            ctx.translate(dino.x, dino.y);
+            
+            // Body (main oval)
+            ctx.fillStyle = bodyColor;
+            ctx.beginPath();
+            ctx.ellipse(20, 25, 18, 22, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Head
+            ctx.fillStyle = bodyColor;
+            ctx.beginPath();
+            ctx.ellipse(12, 10, 12, 14, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Eye
+            ctx.fillStyle = eyeColor;
+            ctx.beginPath();
+            ctx.ellipse(8, 8, 3, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Eye pupil
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.ellipse(7, 8, 1.5, 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Tail
+            ctx.fillStyle = accentColor;
+            ctx.beginPath();
+            ctx.ellipse(35, 20, 8, 12, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Arms (simple moving animation)
+            ctx.fillStyle = accentColor;
+            const armOffset = Math.sin(animCycle * Math.PI / 2) * 2;
+            ctx.beginPath();
+            ctx.ellipse(15, 18 + armOffset, 3, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Legs (running animation)
+            ctx.fillStyle = accentColor;
+            const legOffset1 = Math.sin(animCycle * Math.PI / 2) * 3;
+            const legOffset2 = Math.sin((animCycle + 2) * Math.PI / 2) * 3;
+            
+            // Left leg
+            ctx.beginPath();
+            ctx.ellipse(15, 40 + legOffset1, 3, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Right leg  
+            ctx.beginPath();
+            ctx.ellipse(22, 40 + legOffset2, 3, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Spots for personality
+            ctx.fillStyle = accentColor;
+            ctx.beginPath();
+            ctx.ellipse(18, 15, 2, 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.ellipse(25, 22, 1.5, 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
         }
 
         function clearCanvas() {
@@ -596,30 +717,36 @@
             
             if (event.code === 'Space') {
                 event.preventDefault();
-                console.log('🦘 JUMP! (Character mechanics coming next)');
                 
-                // Update score as placeholder
-                const currentScore = parseInt(document.getElementById('gameScore').textContent);
-                document.getElementById('gameScore').textContent = currentScore + 10;
+                // Make dino jump if not already jumping
+                if (!dino.isJumping) {
+                    dino.isJumping = true;
+                    dino.jumpVelocity = dino.jumpPower;
+                    console.log('🦘 Dino jumps!');
+                    
+                    // Update score for jumping
+                    const currentScore = parseInt(document.getElementById('gameScore').textContent);
+                    document.getElementById('gameScore').textContent = currentScore + 10;
+                }
             }
             
             // Speed controls
             if (event.code === 'ArrowUp') {
                 event.preventDefault();
-                gameSpeed = Math.min(2.0, gameSpeed + 0.1);
+                gameSpeed = Math.min(3.0, gameSpeed + 0.2);
                 console.log(`⬆️ Speed increased to ${gameSpeed.toFixed(1)}`);
             }
             
             if (event.code === 'ArrowDown') {
                 event.preventDefault();
-                gameSpeed = Math.max(0.1, gameSpeed - 0.1);
+                gameSpeed = Math.max(0.2, gameSpeed - 0.2);
                 console.log(`⬇️ Speed decreased to ${gameSpeed.toFixed(1)}`);
             }
             
             // Reset speed
             if (event.code === 'KeyR') {
                 event.preventDefault();
-                gameSpeed = 0.8;
+                gameSpeed = 1.2;
                 console.log(`🔄 Speed reset to ${gameSpeed}`);
             }
         });
