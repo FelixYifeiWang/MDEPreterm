@@ -210,44 +210,46 @@
         }
 
         function getSeasonalColors(season) {
-            // Pixel Zelda-style color palettes that match GitHub theme
+            // Subtle variations of the original GitHub blue-to-green palette
+            // Base: #0969da → #0550ae → #1f883d
             switch(season) {
                 case 'spring':
                     return {
-                        sky1: '#21262d',      // GitHub dark bg
-                        sky2: '#30363d',      // GitHub border  
-                        horizon: '#1f883d',   // GitHub green
-                        ground: '#0e4429'     // Dark green
+                        sky1: '#0969da',      // Original GitHub blue
+                        sky2: '#0a7c42',      // Slightly more green-tinted
+                        horizon: '#26a641',   // Brighter green
+                        ground: '#1f883d'     // Original GitHub green
                     };
                     
                 case 'summer':
                     return {
-                        sky1: '#0969da',      // GitHub blue
-                        sky2: '#1f6feb',      // GitHub accent blue
-                        horizon: '#26a641',   // Bright green
-                        ground: '#1f883d'     // GitHub green
+                        sky1: '#0969da',      // Original GitHub blue  
+                        sky2: '#0550ae',      // Original middle blue
+                        horizon: '#1f883d',   // Original green
+                        ground: '#0e4429'     // Slightly darker green
                     };
                     
                 case 'autumn':
                     return {
-                        sky1: '#7c3aed',      // Purple
-                        sky2: '#a855f7',      // Light purple
-                        horizon: '#f59e0b',   // Orange
-                        ground: '#92400e'     // Brown
+                        sky1: '#8b5a42',      // Muted brown-blue
+                        sky2: '#6b4423',      // Darker brown
+                        horizon: '#a0522d',   // Muted orange-brown
+                        ground: '#654321'     // Dark brown
                     };
                     
                 case 'winter':
                     return {
-                        sky1: '#1f2937',      // Dark gray
-                        sky2: '#374151',      // Gray
-                        horizon: '#6b7280',   // Light gray
-                        ground: '#4b5563'     // Medium gray
+                        sky1: '#5b6b7a',      // Muted blue-gray
+                        sky2: '#4a5662',      // Darker gray
+                        horizon: '#3a454f',   // Dark gray
+                        ground: '#2d3748'     // Very dark gray
                     };
                     
                 default:
+                    // Original GitHub gradient
                     return {
-                        sky1: '#21262d',
-                        sky2: '#30363d', 
+                        sky1: '#0969da',
+                        sky2: '#0550ae', 
                         horizon: '#1f883d',
                         ground: '#0e4429'
                     };
