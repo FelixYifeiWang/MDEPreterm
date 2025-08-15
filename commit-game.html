@@ -458,10 +458,10 @@
         function drawDino() {
             const ctx = gameCtx;
             
-            // Animation cycle for running
-            const animCycle = Math.floor(dino.animationFrame / dino.animationSpeed) % 4;
+            // Simple animation cycle for running (smoother)
+            const animCycle = Math.floor(dino.animationFrame / dino.animationSpeed) % 2;
             
-            // Dino body colors
+            // Dino colors
             const bodyColor = '#39d353';
             const accentColor = '#26a641';
             const eyeColor = '#ffffff';
@@ -469,67 +469,44 @@
             ctx.save();
             ctx.translate(dino.x, dino.y);
             
-            // Body (main oval)
+            // Main body (simple rectangle with rounded corners)
             ctx.fillStyle = bodyColor;
             ctx.beginPath();
-            ctx.ellipse(20, 25, 18, 22, 0, 0, Math.PI * 2);
+            ctx.roundRect(8, 15, 24, 18, 4);
             ctx.fill();
             
-            // Head
+            // Head (circle)
             ctx.fillStyle = bodyColor;
             ctx.beginPath();
-            ctx.ellipse(12, 10, 12, 14, 0, 0, Math.PI * 2);
+            ctx.arc(12, 12, 10, 0, Math.PI * 2);
             ctx.fill();
             
-            // Eye
-            ctx.fillStyle = eyeColor;
-            ctx.beginPath();
-            ctx.ellipse(8, 8, 3, 4, 0, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Eye pupil
+            // Eye (simple dot)
             ctx.fillStyle = '#000000';
             ctx.beginPath();
-            ctx.ellipse(7, 8, 1.5, 2, 0, 0, Math.PI * 2);
+            ctx.arc(9, 10, 2, 0, Math.PI * 2);
             ctx.fill();
             
-            // Tail
+            // Simple tail
             ctx.fillStyle = accentColor;
             ctx.beginPath();
-            ctx.ellipse(35, 20, 8, 12, 0.3, 0, Math.PI * 2);
+            ctx.arc(35, 20, 4, 0, Math.PI * 2);
             ctx.fill();
             
-            // Arms (simple moving animation)
+            // Legs (simple running animation - just alternate positions)
             ctx.fillStyle = accentColor;
-            const armOffset = Math.sin(animCycle * Math.PI / 2) * 2;
-            ctx.beginPath();
-            ctx.ellipse(15, 18 + armOffset, 3, 8, 0, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Legs (running animation)
-            ctx.fillStyle = accentColor;
-            const legOffset1 = Math.sin(animCycle * Math.PI / 2) * 3;
-            const legOffset2 = Math.sin((animCycle + 2) * Math.PI / 2) * 3;
             
             // Left leg
-            ctx.beginPath();
-            ctx.ellipse(15, 40 + legOffset1, 3, 6, 0, 0, Math.PI * 2);
-            ctx.fill();
+            const leftLegY = animCycle === 0 ? 35 : 33;
+            ctx.fillRect(12, leftLegY, 4, 8);
             
-            // Right leg  
-            ctx.beginPath();
-            ctx.ellipse(22, 40 + legOffset2, 3, 6, 0, 0, Math.PI * 2);
-            ctx.fill();
+            // Right leg
+            const rightLegY = animCycle === 0 ? 33 : 35;
+            ctx.fillRect(20, rightLegY, 4, 8);
             
-            // Spots for personality
-            ctx.fillStyle = accentColor;
-            ctx.beginPath();
-            ctx.ellipse(18, 15, 2, 3, 0, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.beginPath();
-            ctx.ellipse(25, 22, 1.5, 2, 0, 0, Math.PI * 2);
-            ctx.fill();
+            // Simple arms
+            ctx.fillRect(6, 20, 3, 6);
+            ctx.fillRect(29, 20, 3, 6);
             
             ctx.restore();
         }
