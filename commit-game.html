@@ -204,7 +204,7 @@
         let gameRunning = false;
         
         // Game mechanics
-        let gameSpeed = 2;
+        let gameSpeed = 0.3; // Much slower - about 1-2 days per second
         let scrollOffset = 0;
         let animationId = null;
         
@@ -522,6 +522,16 @@
             gameCtx.font = '12px monospace';
             gameCtx.textAlign = 'right';
             gameCtx.fillText(`${(progress * 100).toFixed(1)}% complete`, progressX + progressBarWidth, progressY - 8);
+            
+            // Speed indicator
+            const daysPerSecond = (gameSpeed * 60) / timeScale; // 60fps
+            gameCtx.textAlign = 'left';
+            gameCtx.fillText(`Speed: ${daysPerSecond.toFixed(1)} days/sec`, 20, 60);
+            
+            // Controls hint
+            gameCtx.fillStyle = '#7d8590';
+            gameCtx.font = '11px monospace';
+            gameCtx.fillText('↑/↓ arrows: adjust speed • R: reset speed • Click: pause/resume', 20, gameCanvas.height - 20);
         }
 
         function updateLoadingText(text) {
@@ -554,6 +564,26 @@
                 // Update score as placeholder
                 const currentScore = parseInt(document.getElementById('gameScore').textContent);
                 document.getElementById('gameScore').textContent = currentScore + 10;
+            }
+            
+            // Speed controls
+            if (event.code === 'ArrowUp') {
+                event.preventDefault();
+                gameSpeed = Math.min(2.0, gameSpeed + 0.1);
+                console.log(`⬆️ Speed increased to ${gameSpeed.toFixed(1)}`);
+            }
+            
+            if (event.code === 'ArrowDown') {
+                event.preventDefault();
+                gameSpeed = Math.max(0.1, gameSpeed - 0.1);
+                console.log(`⬇️ Speed decreased to ${gameSpeed.toFixed(1)}`);
+            }
+            
+            // Reset speed
+            if (event.code === 'KeyR') {
+                event.preventDefault();
+                gameSpeed = 0.3;
+                console.log(`🔄 Speed reset to ${gameSpeed}`);
             }
         });
 
