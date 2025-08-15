@@ -213,10 +213,12 @@
             jumpPower: -15,
             groundY: 0, // Will be calculated
             animationFrame: 0,
-            animationSpeed: 10, // Frames between animation changes
+            runAnimationSpeed: 8, // Frames between running animation changes
+            jumpAnimationSpeed: 4, // Frames between jumping animation changes (faster for smoother jump)
+            jumpFrameIndex: 0, // Current frame in jump sequence
             sprites: {
-                running: [],
-                jumping: null
+                running: [], // 4 frames
+                jumping: []  // 8 frames
             },
             spritesLoaded: false
         };
@@ -449,11 +451,22 @@
                 dino.y += dino.jumpVelocity;
                 dino.jumpVelocity += dino.gravity;
                 
+                // Update jump animation frame based on jump progress
+                const jumpProgress = Math.abs(dino.jumpVelocity) / Math.abs(dino.jumpPower);
+                if (dino.jumpVelocity < 0) {
+                    // Rising - use frames 0-3
+                    dino.jumpFrameIndex = Math.min(3, Math.floor(jumpProgress * 4));
+                } else {
+                    // Falling - use frames 4-7
+                    dino.jumpFrameIndex = Math.min(7, 4 + Math.floor(jumpProgress * 4));
+                }
+                
                 // Land back on ground
                 if (dino.y >= dino.groundY) {
                     dino.y = dino.groundY;
                     dino.isJumping = false;
                     dino.jumpVelocity = 0;
+                    dino.jumpFrameIndex = 0;
                 }
             } else {
                 dino.y = dino.groundY;
@@ -471,8 +484,8 @@
             canvas.width = 40;
             canvas.height = 40;
             
-            // Create simple placeholder running frames
-            for (let i = 0; i < 2; i++) {
+            // Create 4 running frames
+            for (let i = 0; i < 4; i++) {
                 const sprite = new Image();
                 
                 // Clear canvas
@@ -495,26 +508,82 @@
                 ctx.arc(10, 10, 2, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Legs (different positions for each frame)
+                // Legs (different positions for each of 4 frames)
                 ctx.fillStyle = '#26a641';
-                if (i === 0) {
-                    ctx.fillRect(12, 33, 3, 6); // Left leg
-                    ctx.fillRect(20, 35, 3, 6); // Right leg
-                } else {
-                    ctx.fillRect(12, 35, 3, 6); // Left leg
-                    ctx.fillRect(20, 33, 3, 6); // Right leg
-                }
+                const legOffset = Math.sin((i / 4) * Math.PI * 2) * 2;
+                ctx.fillRect(12, 33 + legOffset, 3, 6); // Left leg
+                ctx.fillRect(20, 33 - legOffset, 3, 6); // Right leg
+                
+                // Arms (slight movement)
+                const armOffset = Math.cos((i / 4) * Math.PI * 2) * 1;
+                ctx.fillRect(6, 20 + armOffset, 3, 6);
+                ctx.fillRect(29, 20 - armOffset, 3, 6);
                 
                 // Convert canvas to image
                 sprite.src = canvas.toDataURL();
                 dino.sprites.running.push(sprite);
             }
             
-            // Create jumping sprite (same as first running frame for now)
-            dino.sprites.jumping = dino.sprites.running[0];
-            dino.spritesLoaded = true;
+            // Create 8 jumping frames
+            for (let i = 0; i < 8; i++) {
+                const sprite = new Image();
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, 40, 40);
+                
+                // Draw dino in different jump poses
+                ctx.fillStyle = '#39d353';
+                
+                // Body
+                ctx.fillRect(8, 15, 24, 18);
+                
+                // Head
+                ctx.beginPath();
+                ctx.arc(12, 12, 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eye
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(10, 10, 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Legs and arms based on jump phase
+                ctx.fillStyle = '#26a641';
+                
+                if (i < 2) {
+                    // Takeoff - legs pushing down
+                    ctx.fillRect(12, 35, 3, 6);
+                    ctx.fillRect(20, 35, 3, 6);
+                    ctx.fillRect(6, 22, 3, 6);
+                    ctx.fillRect(29, 22, 3, 6);
+                } else if (i < 4) {
+                    // Rising - legs tucked
+                    ctx.fillRect(14, 30, 3, 6);
+                    ctx.fillRect(18, 30, 3, 6);
+                    ctx.fillRect(6, 18, 3, 6);
+                    ctx.fillRect(29, 18, 3, 6);
+                } else if (i < 6) {
+                    // Peak - legs extended
+                    ctx.fillRect(10, 32, 3, 6);
+                    ctx.fillRect(22, 32, 3, 6);
+                    ctx.fillRect(6, 16, 3, 6);
+                    ctx.fillRect(29, 16, 3, 6);
+                } else {
+                    // Landing prep - legs extending down
+                    ctx.fillRect(12, 34, 3, 6);
+                    ctx.fillRect(20, 34, 3, 6);
+                    ctx.fillRect(6, 20, 3, 6);
+                    ctx.fillRect(29, 20, 3, 6);
+                }
+                
+                // Convert canvas to image
+                sprite.src = canvas.toDataURL();
+                dino.sprites.jumping.push(sprite);
+            }
             
-            console.log('🖼️ Dino sprites loaded (placeholder - ready for your PNG files!)');
+            dino.spritesLoaded = true;
+            console.log('🖼️ Dino sprites loaded (4 running + 8 jumping frames - ready for your PNG files!)');
         }
 
         function drawDino() {
@@ -525,10 +594,11 @@
             // Choose sprite based on state
             let currentSprite;
             if (dino.isJumping) {
-                currentSprite = dino.sprites.jumping;
+                // Use specific jump frame based on jump progress
+                currentSprite = dino.sprites.jumping[dino.jumpFrameIndex];
             } else {
-                // Cycle through running animation
-                const frameIndex = Math.floor(dino.animationFrame / dino.animationSpeed) % dino.sprites.running.length;
+                // Cycle through 4 running frames
+                const frameIndex = Math.floor(dino.animationFrame / dino.runAnimationSpeed) % 4;
                 currentSprite = dino.sprites.running[frameIndex];
             }
             
@@ -539,14 +609,15 @@
         }
 
         // Function to load your custom PNG sprites
-        function loadCustomSprites(runningFrameUrls, jumpingFrameUrl) {
+        function loadCustomSprites(runningFrameUrls, jumpingFrameUrls) {
             dino.sprites.running = [];
+            dino.sprites.jumping = [];
             dino.spritesLoaded = false;
             
             let loadedCount = 0;
-            const totalFrames = runningFrameUrls.length + 1;
+            const totalFrames = runningFrameUrls.length + jumpingFrameUrls.length;
             
-            // Load running frames
+            // Load 4 running frames
             runningFrameUrls.forEach((url, index) => {
                 const img = new Image();
                 img.onload = () => {
@@ -560,17 +631,19 @@
                 dino.sprites.running[index] = img;
             });
             
-            // Load jumping frame
-            const jumpImg = new Image();
-            jumpImg.onload = () => {
-                loadedCount++;
-                if (loadedCount === totalFrames) {
-                    dino.spritesLoaded = true;
-                    console.log('🖼️ Custom dino sprites loaded!');
-                }
-            };
-            jumpImg.src = jumpingFrameUrl;
-            dino.sprites.jumping = jumpImg;
+            // Load 8 jumping frames
+            jumpingFrameUrls.forEach((url, index) => {
+                const img = new Image();
+                img.onload = () => {
+                    loadedCount++;
+                    if (loadedCount === totalFrames) {
+                        dino.spritesLoaded = true;
+                        console.log('🖼️ Custom dino sprites loaded!');
+                    }
+                };
+                img.src = url;
+                dino.sprites.jumping[index] = img;
+            });
         }
 
         function clearCanvas() {
