@@ -452,38 +452,17 @@
             const groundHeight = 100;
             const groundY = gameCanvas.height - groundHeight;
             
-            // Main ground
+            // Main ground - clean and simple
             gameCtx.fillStyle = '#21262d';
             gameCtx.fillRect(0, groundY, gameCanvas.width, groundHeight);
             
-            // Ground pattern (represents the timeline)
-            gameCtx.strokeStyle = '#30363d';
-            gameCtx.lineWidth = 1;
-            
-            // Draw timeline grid lines
-            const gridSpacing = timeScale * 7; // Weekly markers
-            const startX = -(scrollOffset % gridSpacing);
-            
-            for (let x = startX; x < gameCanvas.width + gridSpacing; x += gridSpacing) {
-                gameCtx.beginPath();
-                gameCtx.moveTo(x, groundY);
-                gameCtx.lineTo(x, groundY + 20);
-                gameCtx.stroke();
-            }
-            
-            // Surface line
+            // Surface line only
             gameCtx.strokeStyle = '#39d353';
             gameCtx.lineWidth = 3;
             gameCtx.beginPath();
             gameCtx.moveTo(0, groundY);
             gameCtx.lineTo(gameCanvas.width, groundY);
             gameCtx.stroke();
-            
-            // Add some surface details
-            gameCtx.fillStyle = '#26a641';
-            for (let x = -(scrollOffset % 40); x < gameCanvas.width; x += 40) {
-                gameCtx.fillRect(x, groundY - 2, 20, 2);
-            }
         }
 
         function drawTimeAxis() {
@@ -492,40 +471,41 @@
             // Calculate current timeline position
             const currentTimelineX = scrollOffset;
             
-            // Draw time markers for every other month (better spacing)
+            // Draw time markers every 3 months for maximum spacing
             gameCtx.fillStyle = '#f0f6fc';
-            gameCtx.font = '12px monospace';
+            gameCtx.font = '14px monospace';
             gameCtx.textAlign = 'center';
             
-            // Generate month markers every 2 months for better spacing
+            // Generate month markers every 3 months for very clean spacing
             let markerDate = new Date(startDate);
             markerDate.setDate(1); // Start at first day of the month
             let monthCount = 0;
             
             while (markerDate <= endDate) {
-                // Only show every other month
-                if (monthCount % 2 === 0) {
+                // Only show every 3rd month
+                if (monthCount % 3 === 0) {
                     // Calculate x position for this month
                     const daysDiff = Math.floor((markerDate - startDate) / (1000 * 60 * 60 * 24));
                     const markerX = daysDiff * timeScale - currentTimelineX;
                     
                     // Only draw if marker is visible on screen
                     if (markerX >= -50 && markerX <= gameCanvas.width + 50) {
-                        // Draw marker line
-                        gameCtx.strokeStyle = '#7d8590';
-                        gameCtx.lineWidth = 2;
-                        gameCtx.beginPath();
-                        gameCtx.moveTo(markerX, groundY - 30);
-                        gameCtx.lineTo(markerX, groundY);
-                        gameCtx.stroke();
-                        
-                        // Draw month label
+                        // Draw month label IN the gray ground area
                         const monthLabel = markerDate.toLocaleDateString('en', { 
                             month: 'short'
                         });
                         
-                        gameCtx.fillStyle = '#7d8590';
-                        gameCtx.fillText(monthLabel, markerX, groundY - 35);
+                        gameCtx.fillStyle = '#f0f6fc';
+                        gameCtx.font = 'bold 16px monospace';
+                        gameCtx.fillText(monthLabel, markerX, groundY + 30);
+                        
+                        // Optional: Draw a subtle vertical line from surface into ground
+                        gameCtx.strokeStyle = '#30363d';
+                        gameCtx.lineWidth = 1;
+                        gameCtx.beginPath();
+                        gameCtx.moveTo(markerX, groundY);
+                        gameCtx.lineTo(markerX, groundY + 50);
+                        gameCtx.stroke();
                     }
                 }
                 
