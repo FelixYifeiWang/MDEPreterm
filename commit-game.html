@@ -51,11 +51,6 @@
             background-clip: text;
         }
         
-        .game-info p {
-            color: #7d8590;
-            font-size: 14px;
-        }
-        
         .score-display {
             background: rgba(33, 38, 45, 0.8);
             padding: 8px 16px;
@@ -184,7 +179,7 @@
         let gameRunning = false;
         
         // Game mechanics
-        let gameSpeed = 1.2; // Faster speed - about 5-6 days per second
+        let gameSpeed = 1.2; // Faster speed
         let scrollOffset = 0;
         let animationId = null;
         
@@ -196,29 +191,32 @@
         
         // Time axis variables
         let timelineData = [];
-        let timeScale = 1; // pixels per day
+        let timeScale = 1;
         let startDate = null;
         let endDate = null;
         let totalDays = 0;
 
-        // Dino character variables
+        // Dino character with sprite animation
         let dino = {
-            x: 120, // Fixed position from left edge
-            y: 0, // Will be set to ground level
-            width: 40,
-            height: 40,
+            x: 120,
+            y: 0,
+            width: 50,
+            height: 50,
             isJumping: false,
             jumpVelocity: 0,
             gravity: 0.8,
             jumpPower: -15,
-            groundY: 0, // Will be calculated
+            groundY: 0,
+            
+            // Animation
             animationFrame: 0,
-            runAnimationSpeed: 8, // Frames between running animation changes
-            jumpAnimationSpeed: 4, // Frames between jumping animation changes (faster for smoother jump)
-            jumpFrameIndex: 0, // Current frame in jump sequence
+            runAnimationSpeed: 8,  // frames between run animation changes
+            jumpFrameIndex: 0,
+            
+            // Sprites
             sprites: {
-                running: [], // 4 frames
-                jumping: []  // 8 frames
+                running: [],  // 4 frames
+                jumping: []   // 4 frames
             },
             spritesLoaded: false
         };
@@ -230,7 +228,6 @@
             gameCanvas = document.getElementById('gameCanvas');
             gameCtx = gameCanvas.getContext('2d');
             
-            // Make canvas responsive
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             
@@ -238,7 +235,6 @@
         });
 
         function resizeCanvas() {
-            const container = gameCanvas.parentElement;
             const maxWidth = Math.min(window.innerWidth - 20, 1600);
             const maxHeight = Math.min(window.innerHeight - 100, 700);
             
@@ -251,7 +247,6 @@
         function loadGameData() {
             updateLoadingText('Loading commit data...');
             
-            // Get data from sessionStorage
             const storedData = sessionStorage.getItem('githubCommitGameData');
             
             if (!storedData) {
@@ -267,7 +262,6 @@
                 gameData = JSON.parse(storedData);
                 console.log('📊 Game data loaded:', gameData);
                 
-                // Validate data
                 if (!gameData.commitData || gameData.commitData.length === 0) {
                     throw new Error('No commit data available');
                 }
@@ -291,7 +285,6 @@
         function processTimelineData() {
             console.log('⏰ Processing timeline data...');
             
-            // Collect all commit dates
             let allCommits = [];
             gameData.commitData.forEach(repo => {
                 repo.commits.forEach(commit => {
@@ -303,31 +296,25 @@
                 });
             });
             
-            // Sort by date
             allCommits.sort((a, b) => a.date - b.date);
             
             if (allCommits.length === 0) {
                 throw new Error('No commits found');
             }
             
-            // Set timeline bounds
             startDate = new Date(allCommits[0].date);
             endDate = new Date(allCommits[allCommits.length - 1].date);
             
-            // Add some padding to the timeline
             startDate.setDate(startDate.getDate() - 30);
             endDate.setDate(endDate.getDate() + 30);
             
             totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
             
-            // Calculate time scale to fit the screen
             const screenWidth = gameCanvas.width;
-            timeScale = Math.max(4, screenWidth / totalDays * 10); // 10x screen width for good spacing
+            timeScale = Math.max(4, screenWidth / totalDays * 10);
             
             console.log(`📅 Timeline: ${totalDays} days, scale: ${timeScale} px/day`);
-            console.log(`📊 Date range: ${startDate.toDateString()} → ${endDate.toDateString()}`);
             
-            // Group commits by day for obstacle generation
             timelineData = [];
             let currentDate = new Date(startDate);
             
@@ -350,13 +337,101 @@
             console.log(`📈 Generated ${timelineData.length} timeline points`);
         }
 
+        function createDinoSprites() {
+            updateLoadingText('Creating dino sprites...');
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 50;
+            canvas.height = 50;
+            
+            // Create 4 running frames
+            for (let i = 0; i < 4; i++) {
+                ctx.clearRect(0, 0, 50, 50);
+                
+                // Simple dino body
+                ctx.fillStyle = '#39d353';
+                ctx.fillRect(10, 20, 30, 20);  // body
+                ctx.beginPath();
+                ctx.arc(15, 15, 10, 0, Math.PI * 2);  // head
+                ctx.fill();
+                
+                // Eye
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(12, 12, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Legs - animate based on frame
+                ctx.fillStyle = '#26a641';
+                const legOffset = (i % 2) * 4 - 2;  // alternates between -2 and 2
+                ctx.fillRect(15, 40 + legOffset, 4, 8);  // left leg
+                ctx.fillRect(25, 40 - legOffset, 4, 8);  // right leg
+                
+                // Arms
+                ctx.fillRect(8, 25, 4, 8);
+                ctx.fillRect(38, 25, 4, 8);
+                
+                const sprite = new Image();
+                sprite.src = canvas.toDataURL();
+                dino.sprites.running.push(sprite);
+            }
+            
+            // Create 4 jumping frames
+            for (let i = 0; i < 4; i++) {
+                ctx.clearRect(0, 0, 50, 50);
+                
+                // Dino body
+                ctx.fillStyle = '#39d353';
+                ctx.fillRect(10, 20, 30, 20);
+                ctx.beginPath();
+                ctx.arc(15, 15, 10, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eye
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(12, 12, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Jump poses
+                ctx.fillStyle = '#26a641';
+                if (i === 0) {
+                    // Takeoff
+                    ctx.fillRect(15, 42, 4, 6);
+                    ctx.fillRect(25, 42, 4, 6);
+                } else if (i === 1) {
+                    // Rising
+                    ctx.fillRect(17, 38, 4, 6);
+                    ctx.fillRect(23, 38, 4, 6);
+                } else if (i === 2) {
+                    // Peak
+                    ctx.fillRect(12, 35, 4, 6);
+                    ctx.fillRect(28, 35, 4, 6);
+                } else {
+                    // Landing
+                    ctx.fillRect(15, 40, 4, 6);
+                    ctx.fillRect(25, 40, 4, 6);
+                }
+                
+                // Arms
+                ctx.fillRect(8, 23, 4, 8);
+                ctx.fillRect(38, 23, 4, 8);
+                
+                const sprite = new Image();
+                sprite.src = canvas.toDataURL();
+                dino.sprites.jumping.push(sprite);
+            }
+            
+            dino.spritesLoaded = true;
+            console.log('🖼️ Dino sprites created: 4 running + 4 jumping frames');
+        }
+
         function initializeGame() {
             updateLoadingText('Setting up game world...');
             
-            // Load dinosaur sprites
-            loadDinoSprites();
+            createDinoSprites();
             
-            // Load high score
             const savedHighScore = localStorage.getItem('commitDinoHighScore') || 0;
             document.getElementById('highScore').textContent = savedHighScore;
             
@@ -379,89 +454,72 @@
         function gameLoop() {
             if (!gameRunning) return;
             
-            // Clear canvas
             clearCanvas();
-            
-            // Update game state
             updateGame();
             
-            // Draw everything
             drawGround();
             drawTimeAxis();
             drawDino();
             drawUI();
             drawYearChange();
             
-            // Continue loop
             animationId = requestAnimationFrame(gameLoop);
         }
 
         function updateGame() {
-            // Calculate current timeline position using RIGHT edge of screen
             const rightEdgeOffset = scrollOffset + gameCanvas.width;
             const rightEdgeTimelineDays = Math.floor(rightEdgeOffset / timeScale);
             const rightEdgeDate = new Date(startDate);
             rightEdgeDate.setDate(rightEdgeDate.getDate() + rightEdgeTimelineDays);
             
-            // Check if we've reached the end
             const maxScrollOffset = totalDays * timeScale;
             if (scrollOffset >= maxScrollOffset) {
-                scrollOffset = maxScrollOffset; // Stop at the end
+                scrollOffset = maxScrollOffset;
                 console.log('🏁 Reached the end of your coding timeline!');
-                return; // Don't continue scrolling
+                return;
             }
             
-            // Check for year changes using the RIGHT edge of screen
             if (rightEdgeDate >= startDate && rightEdgeDate <= endDate) {
                 const newYear = rightEdgeDate.getFullYear();
                 if (currentYear === null) {
-                    currentYear = newYear; // Initialize
+                    currentYear = newYear;
                 } else if (currentYear !== newYear) {
-                    // Year changed!
-                    console.log(`🎆 Year changed to ${newYear}! (triggered by right edge)`);
+                    console.log(`🎆 Year changed to ${newYear}!`);
                     currentYear = newYear;
                     yearChangeText = `${newYear}`;
-                    yearChangeTimer = 180; // Show for 3 seconds at 60fps
+                    yearChangeTimer = 180;
                     yearChangeAlpha = 1.0;
                 }
             }
             
-            // Update year change animation
             if (yearChangeTimer > 0) {
                 yearChangeTimer--;
-                // Fade out in the last 60 frames (1 second)
                 if (yearChangeTimer < 60) {
                     yearChangeAlpha = yearChangeTimer / 60;
                 }
             }
             
-            // Update dino physics
             updateDino();
-            
-            // Move the world (scroll) only if not at the end
             scrollOffset += gameSpeed;
         }
 
         function updateDino() {
-            // Set ground level
             dino.groundY = gameCanvas.height - 100 - dino.height;
             
-            // Handle jumping physics
             if (dino.isJumping) {
                 dino.y += dino.jumpVelocity;
                 dino.jumpVelocity += dino.gravity;
                 
-                // Update jump animation frame based on jump progress
+                // Update jump frame based on jump progress
                 const jumpProgress = Math.abs(dino.jumpVelocity) / Math.abs(dino.jumpPower);
                 if (dino.jumpVelocity < 0) {
-                    // Rising - use frames 0-3
-                    dino.jumpFrameIndex = Math.min(3, Math.floor(jumpProgress * 4));
+                    // Rising - frames 0-1
+                    dino.jumpFrameIndex = Math.min(1, Math.floor(jumpProgress * 2));
                 } else {
-                    // Falling - use frames 4-7
-                    dino.jumpFrameIndex = Math.min(7, 4 + Math.floor(jumpProgress * 4));
+                    // Falling - frames 2-3
+                    dino.jumpFrameIndex = Math.min(3, 2 + Math.floor(jumpProgress * 2));
                 }
                 
-                // Land back on ground
                 if (dino.y >= dino.groundY) {
                     dino.y = dino.groundY;
                     dino.isJumping = false;
@@ -472,182 +530,27 @@
                 dino.y = dino.groundY;
             }
             
-            // Update running animation
             dino.animationFrame++;
-        }
-
-        function loadDinoSprites() {
-            // For now, we'll create placeholder sprites programmatically
-            // You can replace these with actual PNG files
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 40;
-            canvas.height = 40;
-            
-            // Create 4 running frames
-            for (let i = 0; i < 4; i++) {
-                const sprite = new Image();
-                
-                // Clear canvas
-                ctx.clearRect(0, 0, 40, 40);
-                
-                // Draw simple dino shape (placeholder until you provide PNGs)
-                ctx.fillStyle = '#39d353';
-                
-                // Body
-                ctx.fillRect(8, 15, 24, 18);
-                
-                // Head
-                ctx.beginPath();
-                ctx.arc(12, 12, 8, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Eye
-                ctx.fillStyle = '#000000';
-                ctx.beginPath();
-                ctx.arc(10, 10, 2, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Legs (different positions for each of 4 frames)
-                ctx.fillStyle = '#26a641';
-                const legOffset = Math.sin((i / 4) * Math.PI * 2) * 2;
-                ctx.fillRect(12, 33 + legOffset, 3, 6); // Left leg
-                ctx.fillRect(20, 33 - legOffset, 3, 6); // Right leg
-                
-                // Arms (slight movement)
-                const armOffset = Math.cos((i / 4) * Math.PI * 2) * 1;
-                ctx.fillRect(6, 20 + armOffset, 3, 6);
-                ctx.fillRect(29, 20 - armOffset, 3, 6);
-                
-                // Convert canvas to image
-                sprite.src = canvas.toDataURL();
-                dino.sprites.running.push(sprite);
-            }
-            
-            // Create 8 jumping frames
-            for (let i = 0; i < 8; i++) {
-                const sprite = new Image();
-                
-                // Clear canvas
-                ctx.clearRect(0, 0, 40, 40);
-                
-                // Draw dino in different jump poses
-                ctx.fillStyle = '#39d353';
-                
-                // Body
-                ctx.fillRect(8, 15, 24, 18);
-                
-                // Head
-                ctx.beginPath();
-                ctx.arc(12, 12, 8, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Eye
-                ctx.fillStyle = '#000000';
-                ctx.beginPath();
-                ctx.arc(10, 10, 2, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Legs and arms based on jump phase
-                ctx.fillStyle = '#26a641';
-                
-                if (i < 2) {
-                    // Takeoff - legs pushing down
-                    ctx.fillRect(12, 35, 3, 6);
-                    ctx.fillRect(20, 35, 3, 6);
-                    ctx.fillRect(6, 22, 3, 6);
-                    ctx.fillRect(29, 22, 3, 6);
-                } else if (i < 4) {
-                    // Rising - legs tucked
-                    ctx.fillRect(14, 30, 3, 6);
-                    ctx.fillRect(18, 30, 3, 6);
-                    ctx.fillRect(6, 18, 3, 6);
-                    ctx.fillRect(29, 18, 3, 6);
-                } else if (i < 6) {
-                    // Peak - legs extended
-                    ctx.fillRect(10, 32, 3, 6);
-                    ctx.fillRect(22, 32, 3, 6);
-                    ctx.fillRect(6, 16, 3, 6);
-                    ctx.fillRect(29, 16, 3, 6);
-                } else {
-                    // Landing prep - legs extending down
-                    ctx.fillRect(12, 34, 3, 6);
-                    ctx.fillRect(20, 34, 3, 6);
-                    ctx.fillRect(6, 20, 3, 6);
-                    ctx.fillRect(29, 20, 3, 6);
-                }
-                
-                // Convert canvas to image
-                sprite.src = canvas.toDataURL();
-                dino.sprites.jumping.push(sprite);
-            }
-            
-            dino.spritesLoaded = true;
-            console.log('🖼️ Dino sprites loaded (4 running + 8 jumping frames - ready for your PNG files!)');
         }
 
         function drawDino() {
             if (!dino.spritesLoaded) return;
             
-            const ctx = gameCtx;
-            
-            // Choose sprite based on state
             let currentSprite;
+            
             if (dino.isJumping) {
-                // Use specific jump frame based on jump progress
                 currentSprite = dino.sprites.jumping[dino.jumpFrameIndex];
             } else {
-                // Cycle through 4 running frames
                 const frameIndex = Math.floor(dino.animationFrame / dino.runAnimationSpeed) % 4;
                 currentSprite = dino.sprites.running[frameIndex];
             }
             
-            // Draw the sprite
             if (currentSprite && currentSprite.complete) {
-                ctx.drawImage(currentSprite, dino.x, dino.y, dino.width, dino.height);
+                gameCtx.drawImage(currentSprite, dino.x, dino.y, dino.width, dino.height);
             }
         }
 
-        // Function to load your custom PNG sprites
-        function loadCustomSprites(runningFrameUrls, jumpingFrameUrls) {
-            dino.sprites.running = [];
-            dino.sprites.jumping = [];
-            dino.spritesLoaded = false;
-            
-            let loadedCount = 0;
-            const totalFrames = runningFrameUrls.length + jumpingFrameUrls.length;
-            
-            // Load 4 running frames
-            runningFrameUrls.forEach((url, index) => {
-                const img = new Image();
-                img.onload = () => {
-                    loadedCount++;
-                    if (loadedCount === totalFrames) {
-                        dino.spritesLoaded = true;
-                        console.log('🖼️ Custom dino sprites loaded!');
-                    }
-                };
-                img.src = url;
-                dino.sprites.running[index] = img;
-            });
-            
-            // Load 8 jumping frames
-            jumpingFrameUrls.forEach((url, index) => {
-                const img = new Image();
-                img.onload = () => {
-                    loadedCount++;
-                    if (loadedCount === totalFrames) {
-                        dino.spritesLoaded = true;
-                        console.log('🖼️ Custom dino sprites loaded!');
-                    }
-                };
-                img.src = url;
-                dino.sprites.jumping[index] = img;
-            });
-        }
-
         function clearCanvas() {
-            // Sky gradient
             const gradient = gameCtx.createLinearGradient(0, 0, 0, gameCanvas.height);
             gradient.addColorStop(0, '#0969da');
             gradient.addColorStop(0.7, '#0550ae');
@@ -661,11 +564,9 @@
             const groundHeight = 100;
             const groundY = gameCanvas.height - groundHeight;
             
-            // Main ground - clean and simple
             gameCtx.fillStyle = '#21262d';
             gameCtx.fillRect(0, groundY, gameCanvas.width, groundHeight);
             
-            // Surface line only
             gameCtx.strokeStyle = '#39d353';
             gameCtx.lineWidth = 3;
             gameCtx.beginPath();
@@ -676,27 +577,20 @@
 
         function drawTimeAxis() {
             const groundY = gameCanvas.height - 100;
-            
-            // Calculate current timeline position
             const currentTimelineX = scrollOffset;
             
-            // Draw time markers for EVERY month regardless of commits
             gameCtx.fillStyle = '#f0f6fc';
             gameCtx.font = '14px monospace';
             gameCtx.textAlign = 'center';
             
-            // Generate month markers for every single month
             let markerDate = new Date(startDate);
-            markerDate.setDate(1); // Start at first day of the month
+            markerDate.setDate(1);
             
             while (markerDate <= endDate) {
-                // Calculate x position for this month
                 const daysDiff = Math.floor((markerDate - startDate) / (1000 * 60 * 60 * 24));
                 const markerX = daysDiff * timeScale - currentTimelineX;
                 
-                // Only draw if marker is visible on screen
                 if (markerX >= -50 && markerX <= gameCanvas.width + 50) {
-                    // Draw month label IN the gray ground area
                     const monthLabel = markerDate.toLocaleDateString('en', { 
                         month: 'short'
                     });
@@ -705,7 +599,6 @@
                     gameCtx.font = 'bold 16px monospace';
                     gameCtx.fillText(monthLabel, markerX, groundY + 30);
                     
-                    // Optional: Draw a subtle vertical line from surface into ground
                     gameCtx.strokeStyle = '#30363d';
                     gameCtx.lineWidth = 1;
                     gameCtx.beginPath();
@@ -714,23 +607,19 @@
                     gameCtx.stroke();
                 }
                 
-                // Move to next month
                 markerDate.setMonth(markerDate.getMonth() + 1);
             }
         }
 
         function drawUI() {
-            // Draw progress bar
             const progressBarWidth = 300;
             const progressBarHeight = 8;
             const progressX = gameCanvas.width - progressBarWidth - 30;
             const progressY = 30;
             
-            // Background
             gameCtx.fillStyle = 'rgba(33, 38, 45, 0.8)';
             gameCtx.fillRect(progressX - 5, progressY - 5, progressBarWidth + 10, progressBarHeight + 10);
             
-            // Progress
             const maxScrollOffset = totalDays * timeScale;
             const progress = Math.min(1, scrollOffset / maxScrollOffset);
             const isComplete = progress >= 1;
@@ -738,7 +627,6 @@
             gameCtx.fillStyle = isComplete ? '#ff6b6b' : '#39d353';
             gameCtx.fillRect(progressX, progressY, progressBarWidth * progress, progressBarHeight);
             
-            // Border
             gameCtx.strokeStyle = '#30363d';
             gameCtx.lineWidth = 1;
             gameCtx.strokeRect(progressX, progressY, progressBarWidth, progressBarHeight);
@@ -747,36 +635,28 @@
         function drawYearChange() {
             if (yearChangeTimer <= 0) return;
             
-            // Calculate position and size
             const centerX = gameCanvas.width / 2;
             const centerY = gameCanvas.height / 2 - 50;
             
-            // Create dramatic scaling effect
-            const scaleProgress = Math.min(1, (180 - yearChangeTimer) / 30); // Scale up over first 0.5 seconds
-            const scale = 0.5 + (scaleProgress * 0.5); // Scale from 0.5 to 1.0
+            const scaleProgress = Math.min(1, (180 - yearChangeTimer) / 30);
+            const scale = 0.5 + (scaleProgress * 0.5);
             
-            // Save context for transformations
             gameCtx.save();
             
-            // Semi-transparent background
             gameCtx.fillStyle = `rgba(13, 17, 23, ${yearChangeAlpha * 0.8})`;
             gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
             
-            // Move to center and scale
             gameCtx.translate(centerX, centerY);
             gameCtx.scale(scale, scale);
             
-            // Draw year text with gradient effect
             const fontSize = 120;
             gameCtx.font = `bold ${fontSize}px Arial`;
             gameCtx.textAlign = 'center';
             gameCtx.textBaseline = 'middle';
             
-            // Text shadow
             gameCtx.fillStyle = `rgba(0, 0, 0, ${yearChangeAlpha * 0.5})`;
             gameCtx.fillText(yearChangeText, 5, 5);
             
-            // Main text with gradient
             const gradient = gameCtx.createLinearGradient(0, -fontSize/2, 0, fontSize/2);
             gradient.addColorStop(0, `rgba(31, 111, 235, ${yearChangeAlpha})`);
             gradient.addColorStop(0.5, `rgba(255, 255, 255, ${yearChangeAlpha})`);
@@ -785,22 +665,18 @@
             gameCtx.fillStyle = gradient;
             gameCtx.fillText(yearChangeText, 0, 0);
             
-            // Glow effect
             gameCtx.shadowColor = `rgba(31, 111, 235, ${yearChangeAlpha * 0.8})`;
             gameCtx.shadowBlur = 20;
             gameCtx.strokeStyle = `rgba(255, 255, 255, ${yearChangeAlpha * 0.3})`;
             gameCtx.lineWidth = 3;
             gameCtx.strokeText(yearChangeText, 0, 0);
             
-            // Reset shadow
             gameCtx.shadowBlur = 0;
             
-            // Subtitle
             gameCtx.font = 'bold 24px Arial';
             gameCtx.fillStyle = `rgba(125, 133, 144, ${yearChangeAlpha})`;
             gameCtx.fillText('New Year!', 0, 60);
             
-            // Restore context
             gameCtx.restore();
         }
 
@@ -823,26 +699,23 @@
             history.back();
         }
 
-        // Handle keyboard input
+        // Keyboard controls
         document.addEventListener('keydown', function(event) {
             if (!isGameReady) return;
             
             if (event.code === 'Space') {
                 event.preventDefault();
                 
-                // Make dino jump if not already jumping
                 if (!dino.isJumping) {
                     dino.isJumping = true;
                     dino.jumpVelocity = dino.jumpPower;
                     console.log('🦘 Dino jumps!');
                     
-                    // Update score for jumping
                     const currentScore = parseInt(document.getElementById('gameScore').textContent);
                     document.getElementById('gameScore').textContent = currentScore + 10;
                 }
             }
             
-            // Speed controls
             if (event.code === 'ArrowUp') {
                 event.preventDefault();
                 gameSpeed = Math.min(3.0, gameSpeed + 0.2);
@@ -855,7 +728,6 @@
                 console.log(`⬇️ Speed decreased to ${gameSpeed.toFixed(1)}`);
             }
             
-            // Reset speed
             if (event.code === 'KeyR') {
                 event.preventDefault();
                 gameSpeed = 1.2;
@@ -863,7 +735,7 @@
             }
         });
 
-        // Handle click to start/pause
+        // Click to pause/resume
         gameCanvas.addEventListener('click', function() {
             if (!isGameReady) return;
             
@@ -877,18 +749,72 @@
             }
         });
 
-        // Prevent context menu on canvas
         gameCanvas.addEventListener('contextmenu', function(e) {
             e.preventDefault();
         });
 
-        // Handle page visibility changes
         document.addEventListener('visibilitychange', function() {
             if (document.hidden && gameRunning) {
                 gameRunning = false;
                 console.log('⏸️ Game paused (tab hidden)');
             }
         });
+
+        // Function to load custom PNG sprites (ready for your files!)
+        function loadCustomSprites(runningFrameUrls, jumpingFrameUrls) {
+            console.log('🖼️ Loading custom PNG sprites...');
+            
+            dino.sprites.running = [];
+            dino.sprites.jumping = [];
+            dino.spritesLoaded = false;
+            
+            let loadedCount = 0;
+            const totalFrames = 8; // 4 running + 4 jumping
+            
+            // Load 4 running frames
+            runningFrameUrls.forEach((url, index) => {
+                const img = new Image();
+                img.onload = () => {
+                    loadedCount++;
+                    console.log(`✅ Loaded running frame ${index + 1}/4`);
+                    if (loadedCount === totalFrames) {
+                        dino.spritesLoaded = true;
+                        console.log('🎉 All custom sprites loaded!');
+                    }
+                };
+                img.onerror = () => {
+                    console.error(`❌ Failed to load running frame: ${url}`);
+                };
+                img.src = url;
+                dino.sprites.running[index] = img;
+            });
+            
+            // Load 4 jumping frames
+            jumpingFrameUrls.forEach((url, index) => {
+                const img = new Image();
+                img.onload = () => {
+                    loadedCount++;
+                    console.log(`✅ Loaded jumping frame ${index + 1}/4`);
+                    if (loadedCount === totalFrames) {
+                        dino.spritesLoaded = true;
+                        console.log('🎉 All custom sprites loaded!');
+                    }
+                };
+                img.onerror = () => {
+                    console.error(`❌ Failed to load jumping frame: ${url}`);
+                };
+                img.src = url;
+                dino.sprites.jumping[index] = img;
+            });
+        }
+
+        // Example usage (uncomment and modify URLs when you have PNG files):
+        /*
+        loadCustomSprites(
+            ['run1.png', 'run2.png', 'run3.png', 'run4.png'],
+            ['jump1.png', 'jump2.png', 'jump3.png', 'jump4.png']
+        );
+        */
     </script>
 </body>
 </html>
