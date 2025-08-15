@@ -643,6 +643,7 @@
         let gameSpeed = 1.2; // Faster speed
         let scrollOffset = 0;
         let animationId = null;
+        let lastTimestamp = null; // for time-based updates (seconds)
         
         // Screen shake system
         let screenShake = {
@@ -1144,14 +1145,19 @@ function createObstacles() {
             console.log('⚡ Lose all HP to awaken your Super Saiyan power and crush all obstacles! ⚡');
             gameRunning = true;
             scrollOffset = 0;
-            gameLoop();
+            lastTimestamp = null;
+            animationId = requestAnimationFrame(gameLoop);
         }
 
-        function gameLoop() {
+        function gameLoop(now) {
+            if (typeof now !== 'number') now = performance.now();
+            if (lastTimestamp === null) lastTimestamp = now;
+            const dt = Math.min((now - lastTimestamp) / 1000, 0.05); // clamp at 50ms
+            lastTimestamp = now;
             if (!gameRunning) return;
             
             clearCanvas();
-            updateGame();
+            updateGame(dt);
             
             // Apply screen shake effect
             gameCtx.save();
@@ -1471,7 +1477,7 @@ function createObstacles() {
             }
         }
 
-        function updateGame() {
+        function updateGame(dt) {
             // If dino is fallen, only update transformation
             if (dino.isFallen) {
                 updateTransformation();
@@ -1525,7 +1531,7 @@ function createObstacles() {
                 }
             }
             
-            updateDino();
+            updateDino(dt);
             updateObstacles();
             updateFallenTrees();
             updateScreenShake();
@@ -1535,7 +1541,8 @@ function createObstacles() {
             if (!dino.isFallen && !victoryEffect.active) {
                 // Super Saiyan mode moves much faster!
                 const currentSpeed = dino.isSuperSaiyan ? gameSpeed * 10.0 : gameSpeed;
-                scrollOffset += currentSpeed;
+                const pixelsPerSecond = currentSpeed * 60; // calibrated to previous 60 FPS tuning
+                scrollOffset += pixelsPerSecond * dt;
             }
         }
 
@@ -1632,7 +1639,7 @@ function createObstacles() {
                 triggerSuperSaiyanTransformation();
             } else {
                 // Super Saiyan mode active
-                updateSuperSaiyan();
+                updateSuperSaiyan(dt);
             }
         }
         
@@ -1653,7 +1660,7 @@ function createObstacles() {
             console.log('💨 Speed boosted! 🌳 Trees will fall before you! 🛡️ Invincible!');
         }
         
-        function updateSuperSaiyan() {
+        function updateSuperSaiyan(dt) {
             if (dino.transformationTimer > 0) {
                 dino.transformationTimer--;
             }
@@ -1665,7 +1672,7 @@ function createObstacles() {
             dino.isFallen = false;
             
             // Update dino normally
-            updateDino();
+            updateDino(dt);
         }
         
         function updateAuraParticles() {
@@ -1831,7 +1838,7 @@ function createObstacles() {
             console.log('💀 Dino has fallen! But this is not the end... ⚡');
         }
 
-        function updateDino() {
+        function updateDino(dt) {
             dino.groundY = gameCanvas.height - 100 - dino.height;
             
             // Don't update physics if fallen (transformation handles movement)
@@ -1840,8 +1847,8 @@ function createObstacles() {
             }
             
             if (dino.isJumping) {
-                dino.y += dino.jumpVelocity;
-                dino.jumpVelocity += dino.gravity;
+                dino.y += dino.jumpVelocity * dt;
+                dino.jumpVelocity += (dino.gravity * 60 * 60) * dt; // gravity converted to px/s^2
                 
                 // Land back on ground
                 if (dino.y >= dino.groundY) {
@@ -2394,12 +2401,12 @@ function createObstacles() {
                         if (!dino.isJumping) {
                             // First jump from ground
                             dino.isJumping = true;
-                            dino.jumpVelocity = dino.jumpPower;
+                            dino.jumpVelocity = dino.jumpPower * 60; // convert to px/s
                             dino.jumpsRemaining--;
                             console.log('🦘 Dino first jump! (realistic physics)');
                         } else if (dino.jumpsRemaining > 0 && !dino.hasDoubleJumped) {
                             // Double jump in air - slightly weaker
-                            dino.jumpVelocity = dino.jumpPower * 0.8; // Double jump is 80% power
+                            dino.jumpVelocity = dino.jumpPower * 0.8 * 60; // Double jump is 80% power, px/s
                             dino.jumpsRemaining--;
                             dino.hasDoubleJumped = true;
                             console.log('✨ Dino DOUBLE JUMP! (二段跳) - floaty physics!');
@@ -2515,7 +2522,8 @@ function createObstacles() {
                     console.log('⏸️ Game paused');
                 } else {
                     gameRunning = true;
-                    gameLoop();
+                    lastTimestamp = null;
+            animationId = requestAnimationFrame(gameLoop);
                     console.log('▶️ Game resumed');
                 }
             });
