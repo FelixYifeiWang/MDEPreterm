@@ -183,6 +183,14 @@
         let scrollOffset = 0;
         let animationId = null;
         
+        // Screen shake system
+        let screenShake = {
+            intensity: 0,
+            duration: 0,
+            x: 0,
+            y: 0
+        };
+        
         // Year change tracking
         let currentYear = null;
         let yearChangeText = '';
@@ -375,15 +383,18 @@
             });
             
             // Create obstacles from monthly data
+            // Reference: Intense engineers average 10-20 commits/day
+            // Monthly: 300-600 commits (normal intense), 600-900+ (extreme crunch)
             Object.values(monthlyCommits).forEach(month => {
-                if (month.commits > 5) { // Only create obstacles for active months
-                    const obstacleHeight = Math.min(150, month.commits * 3); // Height based on commits
+                if (month.commits > 10) { // Lower threshold for more obstacles
+                    // Scale height more aggressively - can go way beyond screen
+                    const obstacleHeight = Math.min(800, month.commits * 8); // Much taller scaling
                     const groundY = gameCanvas.height - 100;
                     
                     obstacles.push({
                         x: month.x + (Math.random() * 200 - 100), // Add some randomness to position
                         y: groundY - obstacleHeight,
-                        width: 20,
+                        width: 25, // Slightly wider for better visibility
                         height: obstacleHeight,
                         commits: month.commits,
                         passed: false
@@ -391,7 +402,24 @@
                 }
             });
             
-            console.log(`🚧 Created ${obstacles.length} obstacles based on commit activity`);
+            console.log(`🚧 Created ${obstacles.length} obstacles (can be taller than screen for intense months)`);
+        }
+
+        function addScreenShake(intensity, duration) {
+            screenShake.intensity = intensity;
+            screenShake.duration = duration;
+        }
+
+        function updateScreenShake() {
+            if (screenShake.duration > 0) {
+                screenShake.duration--;
+                const shakeAmount = screenShake.intensity * (screenShake.duration / 30); // Decay over time
+                screenShake.x = (Math.random() - 0.5) * shakeAmount;
+                screenShake.y = (Math.random() - 0.5) * shakeAmount;
+            } else {
+                screenShake.x = 0;
+                screenShake.y = 0;
+            }
         }
 
         function createDinoSprites() {
@@ -482,10 +510,18 @@
             clearCanvas();
             updateGame();
             
+            // Apply screen shake effect
+            gameCtx.save();
+            gameCtx.translate(screenShake.x, screenShake.y);
+            
             drawGround();
             drawTimeAxis();
             drawObstacles();
             drawDino();
+            
+            gameCtx.restore();
+            
+            // UI elements should not shake
             drawUI();
             drawYearChange();
             
@@ -527,6 +563,7 @@
             
             updateDino();
             updateObstacles();
+            updateScreenShake();
             checkCollisions();
             scrollOffset += gameSpeed;
         }
@@ -577,11 +614,16 @@
                         dino.isInvincible = true;
                         dino.invincibilityTimer = 90; // 1.5 seconds of invincibility at 60fps
                         
-                        console.log(`💥 Hit obstacle! HP: ${dino.hp}/${dino.maxHp}`);
+                        // Add screen shake based on obstacle size (commit intensity)
+                        const shakeIntensity = Math.min(20, obstacle.commits / 10); // Scale shake with commits
+                        addScreenShake(shakeIntensity, 20); // 20 frames of shake
+                        
+                        console.log(`💥 Hit ${obstacle.commits}-commit obstacle! HP: ${dino.hp}/${dino.maxHp} 📳`);
                         
                         // Check for game over
                         if (dino.hp <= 0) {
                             console.log('💀 Game Over!');
+                            addScreenShake(30, 60); // Big shake for game over
                             // Could add game over logic here
                         }
                     }
@@ -628,37 +670,61 @@
                 // Only draw obstacles that are visible on screen
                 if (obstacleScreenX > -obstacle.width && obstacleScreenX < gameCanvas.width + obstacle.width) {
                     // Create gradient based on commit count
-                    const intensity = Math.min(1, obstacle.commits / 50); // Normalize to 0-1
+                    const intensity = Math.min(1, obstacle.commits / 200); // Adjusted for higher commit counts
                     const gradient = gameCtx.createLinearGradient(0, obstacle.y, 0, obstacle.y + obstacle.height);
                     
-                    // Color based on intensity: green for low, red for high
+                    // Color based on intensity: green for low, red for extreme
                     const red = Math.floor(255 * intensity);
-                    const green = Math.floor(255 * (1 - intensity * 0.5));
+                    const green = Math.floor(255 * (1 - intensity * 0.7));
                     const blue = Math.floor(100 * (1 - intensity));
                     
                     gradient.addColorStop(0, `rgba(${red}, ${green}, ${blue}, 0.9)`);
                     gradient.addColorStop(1, `rgba(${Math.floor(red * 0.7)}, ${Math.floor(green * 0.7)}, ${Math.floor(blue * 0.7)}, 0.9)`);
                     
-                    // Draw main obstacle
+                    // Draw main obstacle (clamp to screen for rendering)
+                    const drawY = Math.max(0, obstacle.y); // Don't draw above screen
+                    const drawHeight = Math.min(obstacle.height, gameCanvas.height - 100 - drawY); // Clamp height
+                    
                     gameCtx.fillStyle = gradient;
-                    gameCtx.fillRect(obstacleScreenX, obstacle.y, obstacle.width, obstacle.height);
+                    gameCtx.fillRect(obstacleScreenX, drawY, obstacle.width, drawHeight);
                     
                     // Draw border
                     gameCtx.strokeStyle = '#30363d';
                     gameCtx.lineWidth = 2;
-                    gameCtx.strokeRect(obstacleScreenX, obstacle.y, obstacle.width, obstacle.height);
+                    gameCtx.strokeRect(obstacleScreenX, drawY, obstacle.width, drawHeight);
                     
-                    // Draw commit count on top
+                    // If obstacle extends beyond screen, show warning arrows at top
+                    if (obstacle.y < 0) {
+                        gameCtx.fillStyle = '#ff4757';
+                        gameCtx.font = 'bold 20px monospace';
+                        gameCtx.textAlign = 'center';
+                        gameCtx.fillText('⬆️', obstacleScreenX + obstacle.width / 2, 25);
+                    }
+                    
+                    // Draw commit count (position based on whether obstacle is tall)
+                    const textY = obstacle.y < 50 ? gameCanvas.height - 120 : obstacle.y - 5;
+                    
                     gameCtx.fillStyle = '#ffffff';
-                    gameCtx.font = 'bold 12px monospace';
+                    gameCtx.font = 'bold 14px monospace';
                     gameCtx.textAlign = 'center';
-                    gameCtx.fillText(obstacle.commits.toString(), obstacleScreenX + obstacle.width / 2, obstacle.y - 5);
+                    gameCtx.fillText(obstacle.commits.toString(), obstacleScreenX + obstacle.width / 2, textY);
                     
-                    // Add small shadow for text readability
+                    // Add shadow for text readability
                     gameCtx.fillStyle = '#000000';
-                    gameCtx.fillText(obstacle.commits.toString(), obstacleScreenX + obstacle.width / 2 + 1, obstacle.y - 4);
+                    gameCtx.fillText(obstacle.commits.toString(), obstacleScreenX + obstacle.width / 2 + 1, textY + 1);
                     gameCtx.fillStyle = '#ffffff';
-                    gameCtx.fillText(obstacle.commits.toString(), obstacleScreenX + obstacle.width / 2, obstacle.y - 5);
+                    gameCtx.fillText(obstacle.commits.toString(), obstacleScreenX + obstacle.width / 2, textY);
+                    
+                    // Add "EXTREME" label for very high commit counts (600+ commits/month)
+                    if (obstacle.commits >= 600) {
+                        gameCtx.fillStyle = '#ff4757';
+                        gameCtx.font = 'bold 10px monospace';
+                        gameCtx.fillText('EXTREME', obstacleScreenX + obstacle.width / 2, textY + 15);
+                    } else if (obstacle.commits >= 300) {
+                        gameCtx.fillStyle = '#ffd700';
+                        gameCtx.font = 'bold 10px monospace';
+                        gameCtx.fillText('INTENSE', obstacleScreenX + obstacle.width / 2, textY + 15);
+                    }
                 }
             });
         }
