@@ -1335,7 +1335,7 @@
                     gameCtx.globalAlpha = alpha;
                     
                     // Rotate around the base of the tree
-                    gameCtx.translate(treeScreenX, groundY);
+                    gameCtx.translate(treeScreenX, groundY + (tree.yOffset || 0));
                     gameCtx.rotate(tree.rotation);
                     
                     // Draw the fallen tree (simplified version)
@@ -1458,7 +1458,7 @@
             // Only scroll if not fallen and not victorious
             if (!dino.isFallen && !victoryEffect.active) {
                 // Super Saiyan mode moves much faster!
-                const currentSpeed = dino.isSuperSaiyan ? gameSpeed * 2.5 : gameSpeed;
+                const currentSpeed = dino.isSuperSaiyan ? gameSpeed * 4.0 : gameSpeed;
                 scrollOffset += currentSpeed;
             }
         }
@@ -1541,7 +1541,7 @@
         function updateTransformation() {
             dino.fallenTimer++;
             
-            if (dino.fallenTimer <= 180) { // 3 seconds at 60fps
+            if (dino.fallenTimer <= 300) { // 5 seconds at 60fps (wait longer before Super Saiyan)
                 // Fallen state - rotate and turn gray (existing animation)
                 if (dino.fallenTimer <= 60) {
                     dino.deathRotation = (dino.fallenTimer / 60) * (Math.PI / 2); // 90 degrees
@@ -1551,7 +1551,7 @@
                 dino.y = dino.groundY;
                 dino.isJumping = false;
                 dino.jumpVelocity = 0;
-            } else if (dino.fallenTimer === 181) {
+            } else if (dino.fallenTimer === 301) {
                 // Transformation moment!
                 triggerSuperSaiyanTransformation();
             } else {
@@ -1647,7 +1647,8 @@
         }
 
         function checkCollisions() {
-            if (dino.isInvincible || dino.isFallen) {
+            // Allow collisions while Super Saiyan so trees can fall
+            if (dino.isFallen || (dino.isInvincible && !dino.isSuperSaiyan)) {
                 if (dino.isInvincible && !dino.isSuperSaiyan) {
                     dino.invincibilityTimer--;
                     if (dino.invincibilityTimer <= 0) {
@@ -1725,7 +1726,10 @@
                 commits: obstacle.commits,
                 language: obstacle.language,
                 rotation: 0,
-                life: 180 // 3 seconds to fade out
+                angularVelocity: 0.06 + Math.min(0.14, obstacle.commits / 200), // bigger trees fall a bit faster
+                direction: 1, // fall to the right (forward)
+                yOffset: 0,
+                life: 240 // 4 seconds to fade out
             });
             
             // Remove from obstacles array
@@ -1995,7 +1999,7 @@
                     gameCtx.rotate(dino.deathRotation);
                     
                     // Apply grayscale filter during fallen state
-                    if (dino.fallenTimer <= 180) {
+                    if (dino.fallenTimer <= 300) {
                         gameCtx.filter = 'grayscale(100%) contrast(0.8)';
                     }
                     
@@ -2004,7 +2008,7 @@
                         gameCtx.drawImage(currentSprite, -dino.width/2, -dino.height/2, dino.width, dino.height);
                     } else {
                         // Fallback: draw simple rectangle if sprite fails
-                        gameCtx.fillStyle = dino.fallenTimer <= 180 ? '#666666' : '#39d353';
+                        gameCtx.fillStyle = dino.fallenTimer <= 300 ? '#666666' : '#39d353';
                         gameCtx.fillRect(-dino.width/2, -dino.height/2, dino.width, dino.height);
                     }
                 } else {
