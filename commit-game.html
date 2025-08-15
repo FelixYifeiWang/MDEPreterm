@@ -644,7 +644,8 @@
         let scrollOffset = 0;
         let animationId = null;
         const SPEED_UNIT = 140; // slightly faster overall
-        const JUMP_UNIT = 80; // px per second per 1.0 jumpPower (was 60) // px per second per 1.0 gameSpeed (was 60)
+        const JUMP_UNIT = 60; // match original height (~225px)
+        const JUMP_TEMPO = 1.44; // >1.0 makes jump quicker without higher apex
         let lastTimestamp = null; // for time-based updates (seconds)
         let runAnimAccumulator = 0; // seconds
         const RUN_ANIM_FPS = 10; // running frames per second
@@ -1852,7 +1853,7 @@ function createObstacles() {
             
             if (dino.isJumping) {
                 dino.y += dino.jumpVelocity * dt;
-                dino.jumpVelocity += (dino.gravity * 60 * 60) * dt; // gravity converted to px/s^2
+                dino.jumpVelocity += (dino.gravity * 60 * 60 * JUMP_TEMPO) * dt; // gravity converted to px/s^2
                 
                 // Land back on ground
                 if (dino.y >= dino.groundY) {
@@ -2412,12 +2413,12 @@ function createObstacles() {
                         if (!dino.isJumping) {
                             // First jump from ground
                             dino.isJumping = true;
-                            dino.jumpVelocity = dino.jumpPower * JUMP_UNIT; // convert to px/s, faster jump
+                            dino.jumpVelocity = dino.jumpPower * JUMP_UNIT * Math.sqrt(JUMP_TEMPO); // faster tempo, same height
                             dino.jumpsRemaining--;
                             console.log('🦘 Dino first jump! (realistic physics)');
                         } else if (dino.jumpsRemaining > 0 && !dino.hasDoubleJumped) {
                             // Double jump in air - slightly weaker
-                            dino.jumpVelocity = dino.jumpPower * 0.8 * JUMP_UNIT; // Double jump is 80% power, px/s
+                            dino.jumpVelocity = dino.jumpPower * 0.8 * JUMP_UNIT * Math.sqrt(JUMP_TEMPO); // faster tempo, same height
                             dino.jumpsRemaining--;
                             dino.hasDoubleJumped = true;
                             console.log('✨ Dino DOUBLE JUMP! (二段跳) - floaty physics!');
