@@ -180,6 +180,12 @@
             y: 0
         };
         
+        // Damage/bleeding effect
+        let damageEffect = {
+            alpha: 0,
+            duration: 0
+        };
+        
         // Year change tracking
         let currentYear = null;
         let yearChangeText = '';
@@ -396,7 +402,12 @@
         function addScreenShake(intensity, duration) {
             screenShake.intensity = intensity;
             screenShake.duration = duration;
-            console.log(`📳 Screen shake added: intensity=${intensity}, duration=${duration}`);
+            
+            // Add bleeding effect when taking damage
+            damageEffect.alpha = 0.4; // Start with 40% red overlay
+            damageEffect.duration = 45; // 0.75 seconds
+            
+            console.log(`📳 Screen shake added: intensity=${intensity}, duration=${duration} + bleeding effect`);
         }
 
         function updateScreenShake() {
@@ -413,6 +424,15 @@
             } else {
                 screenShake.x = 0;
                 screenShake.y = 0;
+            }
+            
+            // Update damage effect
+            if (damageEffect.duration > 0) {
+                damageEffect.duration--;
+                // Fade out the red overlay
+                damageEffect.alpha = (damageEffect.duration / 45) * 0.4;
+            } else {
+                damageEffect.alpha = 0;
             }
         }
 
@@ -516,7 +536,17 @@
             drawUI();
             drawYearChange();
             
+            // Draw damage effect overlay (should not shake)
+            drawDamageEffect();
+            
             animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function drawDamageEffect() {
+            if (damageEffect.alpha > 0) {
+                gameCtx.fillStyle = `rgba(255, 0, 0, ${damageEffect.alpha})`;
+                gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            }
         }
 
         function updateGame() {
@@ -653,65 +683,111 @@
                 
                 // Only draw obstacles that are visible on screen
                 if (obstacleScreenX > -obstacle.width && obstacleScreenX < gameCanvas.width + obstacle.width) {
-                    // Create gradient based on commit count
-                    const intensity = Math.min(1, obstacle.commits / 300); // Adjusted for new scaling
-                    const gradient = gameCtx.createLinearGradient(0, obstacle.y, 0, obstacle.y + obstacle.height);
+                    const groundY = gameCanvas.height - 100;
                     
-                    // Color based on intensity: green for low, red for extreme
-                    const red = Math.floor(255 * intensity);
-                    const green = Math.floor(255 * (1 - intensity * 0.7));
-                    const blue = Math.floor(100 * (1 - intensity));
+                    // Tree trunk (bottom 20% of obstacle height, minimum 30px)
+                    const trunkHeight = Math.max(30, obstacle.height * 0.2);
+                    const trunkWidth = obstacle.width * 0.6; // Thinner trunk
+                    const trunkX = obstacleScreenX + (obstacle.width - trunkWidth) / 2;
+                    const trunkY = groundY - trunkHeight;
                     
-                    gradient.addColorStop(0, `rgba(${red}, ${green}, ${blue}, 0.9)`);
-                    gradient.addColorStop(1, `rgba(${Math.floor(red * 0.7)}, ${Math.floor(green * 0.7)}, ${Math.floor(blue * 0.7)}, 0.9)`);
+                    // Draw trunk with wood texture
+                    const trunkGradient = gameCtx.createLinearGradient(trunkX, trunkY, trunkX + trunkWidth, trunkY);
+                    trunkGradient.addColorStop(0, '#8B4513');
+                    trunkGradient.addColorStop(0.5, '#A0522D');
+                    trunkGradient.addColorStop(1, '#654321');
                     
-                    // Draw main obstacle (clamp to screen for rendering)
-                    const drawY = Math.max(0, obstacle.y); // Don't draw above screen
-                    const drawHeight = Math.min(obstacle.height, gameCanvas.height - 100 - drawY); // Clamp height
+                    gameCtx.fillStyle = trunkGradient;
+                    gameCtx.fillRect(trunkX, trunkY, trunkWidth, trunkHeight);
                     
-                    gameCtx.fillStyle = gradient;
-                    gameCtx.fillRect(obstacleScreenX, drawY, obstacle.width, drawHeight);
-                    
-                    // Draw border
-                    gameCtx.strokeStyle = '#30363d';
+                    // Trunk border
+                    gameCtx.strokeStyle = '#5D4E37';
                     gameCtx.lineWidth = 2;
-                    gameCtx.strokeRect(obstacleScreenX, drawY, obstacle.width, drawHeight);
+                    gameCtx.strokeRect(trunkX, trunkY, trunkWidth, trunkHeight);
                     
-                    // If obstacle extends beyond screen, show warning arrows at top
+                    // Tree foliage (top 80% of obstacle height)
+                    const foliageHeight = obstacle.height - trunkHeight;
+                    const foliageWidth = obstacle.width * 1.2; // Wider than trunk
+                    const foliageX = obstacleScreenX - (foliageWidth - obstacle.width) / 2;
+                    const foliageY = Math.max(0, groundY - obstacle.height);
+                    
+                    // Determine foliage color based on commit intensity
+                    const intensity = Math.min(1, obstacle.commits / 300);
+                    let foliageColor1, foliageColor2;
+                    
+                    if (intensity < 0.3) {
+                        // Light green for low activity
+                        foliageColor1 = '#90EE90';
+                        foliageColor2 = '#32CD32';
+                    } else if (intensity < 0.6) {
+                        // Medium green for moderate activity
+                        foliageColor1 = '#228B22';
+                        foliageColor2 = '#006400';
+                    } else {
+                        // Dark/red for high activity (stressed trees!)
+                        foliageColor1 = '#8B4513';
+                        foliageColor2 = '#654321';
+                    }
+                    
+                    // Create foliage gradient
+                    const foliageGradient = gameCtx.createRadialGradient(
+                        foliageX + foliageWidth/2, foliageY + foliageHeight/2, 0,
+                        foliageX + foliageWidth/2, foliageY + foliageHeight/2, foliageWidth/2
+                    );
+                    foliageGradient.addColorStop(0, foliageColor1);
+                    foliageGradient.addColorStop(1, foliageColor2);
+                    
+                    // Draw foliage as rounded rectangle (tree crown)
+                    const actualFoliageHeight = Math.min(foliageHeight, gameCanvas.height - 100 - foliageY);
+                    if (actualFoliageHeight > 0) {
+                        gameCtx.fillStyle = foliageGradient;
+                        gameCtx.beginPath();
+                        gameCtx.roundRect(foliageX, foliageY, foliageWidth, actualFoliageHeight, 15);
+                        gameCtx.fill();
+                        
+                        // Foliage border
+                        gameCtx.strokeStyle = '#2F4F2F';
+                        gameCtx.lineWidth = 2;
+                        gameCtx.stroke();
+                    }
+                    
+                    // If tree extends beyond screen, show warning arrows at top
                     if (obstacle.y < 0) {
                         gameCtx.fillStyle = '#ff4757';
                         gameCtx.font = 'bold 20px monospace';
                         gameCtx.textAlign = 'center';
-                        gameCtx.fillText('⬆️', obstacleScreenX + obstacle.width / 2, 25);
+                        gameCtx.fillText('⬆️🌳', obstacleScreenX + obstacle.width / 2, 25);
                     }
                     
-                    // Draw commit count (position based on whether obstacle is tall)
-                    const textY = obstacle.y < 50 ? gameCanvas.height - 120 : obstacle.y - 5;
+                    // Draw commit count on the trunk
+                    const textY = trunkY + trunkHeight / 2 + 5;
                     
-                    gameCtx.fillStyle = '#ffffff';
-                    gameCtx.font = 'bold 14px monospace';
+                    gameCtx.fillStyle = '#FFFFFF';
+                    gameCtx.font = 'bold 12px monospace';
                     gameCtx.textAlign = 'center';
-                    gameCtx.fillText(obstacle.commits.toString(), obstacleScreenX + obstacle.width / 2, textY);
                     
-                    // Add shadow for text readability
-                    gameCtx.fillStyle = '#000000';
-                    gameCtx.fillText(obstacle.commits.toString(), obstacleScreenX + obstacle.width / 2 + 1, textY + 1);
-                    gameCtx.fillStyle = '#ffffff';
-                    gameCtx.fillText(obstacle.commits.toString(), obstacleScreenX + obstacle.width / 2, textY);
+                    // Background for text readability
+                    const textWidth = gameCtx.measureText(obstacle.commits.toString()).width;
+                    gameCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    gameCtx.fillRect(trunkX + trunkWidth/2 - textWidth/2 - 3, textY - 10, textWidth + 6, 14);
                     
-                    // Add intensity labels with adjusted thresholds
+                    // Commit count text
+                    gameCtx.fillStyle = '#FFFFFF';
+                    gameCtx.fillText(obstacle.commits.toString(), trunkX + trunkWidth / 2, textY);
+                    
+                    // Add intensity labels below the trunk
+                    const labelY = groundY + 15;
+                    gameCtx.font = 'bold 9px monospace';
+                    
                     if (obstacle.commits >= 300) {
                         gameCtx.fillStyle = '#ff4757';
-                        gameCtx.font = 'bold 10px monospace';
-                        gameCtx.fillText('EXTREME', obstacleScreenX + obstacle.width / 2, textY + 15);
+                        gameCtx.fillText('ANCIENT 🌳', obstacleScreenX + obstacle.width / 2, labelY);
                     } else if (obstacle.commits >= 150) {
                         gameCtx.fillStyle = '#ffd700';
-                        gameCtx.font = 'bold 10px monospace';
-                        gameCtx.fillText('INTENSE', obstacleScreenX + obstacle.width / 2, textY + 15);
+                        gameCtx.fillText('MATURE 🌲', obstacleScreenX + obstacle.width / 2, labelY);
                     } else if (obstacle.commits >= 75) {
                         gameCtx.fillStyle = '#39d353';
-                        gameCtx.font = 'bold 10px monospace';
-                        gameCtx.fillText('ACTIVE', obstacleScreenX + obstacle.width / 2, textY + 15);
+                        gameCtx.fillText('GROWING 🌱', obstacleScreenX + obstacle.width / 2, labelY);
                     }
                 }
             });
