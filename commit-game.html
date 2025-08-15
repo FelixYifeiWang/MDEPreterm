@@ -167,6 +167,165 @@
         let isGameReady = false;
         let gameRunning = false;
         
+        // Audio system
+        let audioContext = null;
+        let soundEnabled = true;
+
+        // Initialize audio context
+        function initAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Resume audio context if it's suspended (required by modern browsers)
+                if (audioContext.state === 'suspended') {
+                    // Will be resumed on first user interaction
+                    console.log('🔊 Audio context created (will activate on first interaction)');
+                } else {
+                    console.log('🔊 Audio system initialized and ready');
+                }
+            } catch (error) {
+                console.warn('⚠️ Audio not supported:', error);
+                soundEnabled = false;
+            }
+        }
+
+        // Resume audio context (called on first user interaction)
+        function resumeAudio() {
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume().then(() => {
+                    console.log('🔊 Audio context activated!');
+                }).catch(error => {
+                    console.warn('⚠️ Could not activate audio:', error);
+                });
+            }
+        }
+
+        // Play collision sound based on tree size
+        function playCollisionSound(commits) {
+            if (!soundEnabled || !audioContext) return;
+            
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                // Connect audio nodes
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Determine sound characteristics based on tree size
+                let frequency, duration, volume;
+                
+                if (commits <= 3) {
+                    // Tiny sapling - high pitched "pop"
+                    frequency = 800;
+                    duration = 0.1;
+                    volume = 0.15;
+                    oscillator.type = 'sine';
+                } else if (commits <= 10) {
+                    // Small tree - medium "bonk"
+                    frequency = 400;
+                    duration = 0.15;
+                    volume = 0.2;
+                    oscillator.type = 'triangle';
+                } else if (commits <= 50) {
+                    // Medium tree - lower "thud"
+                    frequency = 200;
+                    duration = 0.2;
+                    volume = 0.25;
+                    oscillator.type = 'square';
+                } else {
+                    // Large tree - deep "crash"
+                    frequency = 100;
+                    duration = 0.3;
+                    volume = 0.3;
+                    oscillator.type = 'sawtooth';
+                }
+                
+                // Set up volume envelope (attack and decay)
+                const now = audioContext.currentTime;
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(volume, now + 0.01); // Quick attack
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + duration); // Decay
+                
+                // Set frequency
+                oscillator.frequency.setValueAtTime(frequency, now);
+                
+                // Add a slight frequency drop for more impact
+                oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.5, now + duration);
+                
+                // Start and stop the sound
+                oscillator.start(now);
+                oscillator.stop(now + duration);
+                
+            } catch (error) {
+                console.warn('🔇 Error playing collision sound:', error);
+            }
+        }
+
+        // Play victory sound
+        function playVictorySound() {
+            if (!soundEnabled || !audioContext) return;
+            
+            try {
+                // Play a series of ascending notes
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                
+                notes.forEach((frequency, index) => {
+                    setTimeout(() => {
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.type = 'sine';
+                        oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                        
+                        const now = audioContext.currentTime;
+                        gainNode.gain.setValueAtTime(0, now);
+                        gainNode.gain.linearRampToValueAtTime(0.2, now + 0.01);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                        
+                        oscillator.start(now);
+                        oscillator.stop(now + 0.3);
+                    }, index * 150);
+                });
+            } catch (error) {
+                console.warn('🔇 Error playing victory sound:', error);
+            }
+        }
+
+        // Play death sound
+        function playDeathSound() {
+            if (!soundEnabled || !audioContext) return;
+            
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = 'sawtooth';
+                
+                const now = audioContext.currentTime;
+                
+                // Descending frequency for dramatic effect
+                oscillator.frequency.setValueAtTime(440, now);
+                oscillator.frequency.exponentialRampToValueAtTime(110, now + 1.0);
+                
+                // Volume envelope
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(0.3, now + 0.1);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.0);
+                
+                oscillator.start(now);
+                oscillator.stop(now + 1.0);
+            } catch (error) {
+                console.warn('🔇 Error playing death sound:', error);
+            }
+        }
+        
         // Game mechanics
         let gameSpeed = 1.2; // Faster speed
         let scrollOffset = 0;
@@ -554,6 +713,9 @@
         function initializeGame() {
             updateLoadingText('Setting up game world...');
             
+            // Initialize audio system
+            initAudio();
+            
             // Load only running sprites (no separate jump sprites needed)
             loadCustomSprites(['run1.png', 'run2.png', 'run3.png', 'run4.png']);
             
@@ -576,6 +738,7 @@
 
         function startGame() {
             console.log('🚀 Game started!');
+            console.log('🎮 Controls: SPACE=Jump, ↑↓=Speed, R=Restart, M=Sound Toggle, Click=Pause');
             gameRunning = true;
             scrollOffset = 0;
             gameLoop();
@@ -945,6 +1108,9 @@
             victoryEffect.timer = 0;
             victoryEffect.fireworks = [];
             
+            // Play victory sound
+            playVictorySound();
+            
             // Create initial fireworks
             for (let i = 0; i < 10; i++) {
                 createFirework();
@@ -1073,6 +1239,9 @@
                         dino.isInvincible = true;
                         dino.invincibilityTimer = 90; // 1.5 seconds of invincibility at 60fps
                         
+                        // Play collision sound based on tree size
+                        playCollisionSound(obstacle.commits);
+                        
                         // Add screen shake - adjust for smaller trees
                         const baseShake = 6; // Reduced base shake for tiny trees
                         const commitShake = Math.min(10, obstacle.commits / 15); // Scaling adjusted
@@ -1108,6 +1277,9 @@
             dino.deathRotation = 0;
             dino.isInvincible = false;
             dino.isJumping = false;
+            
+            // Play death sound
+            playDeathSound();
             
             // Big death shake
             addScreenShake(25, 90); // 1.5 seconds of dramatic shake
@@ -1528,6 +1700,14 @@
             gameCtx.font = '10px monospace';
             gameCtx.textAlign = 'center';
             gameCtx.fillText(`${dino.hp}/${dino.maxHp}`, hpX + 25 + hpBarWidth / 2, hpY + 8);
+            
+            // Sound indicator (bottom-left)
+            const soundX = 30;
+            const soundY = gameCanvas.height - 30;
+            gameCtx.fillStyle = soundEnabled ? '#39d353' : '#ff4757';
+            gameCtx.font = 'bold 12px monospace';
+            gameCtx.textAlign = 'left';
+            gameCtx.fillText(`🔊 ${soundEnabled ? 'ON' : 'OFF'} (M to toggle)`, soundX, soundY);
         }
 
         function drawYearChange() {
@@ -1601,6 +1781,9 @@
         document.addEventListener('keydown', function(event) {
             if (!isGameReady) return;
             
+            // Resume audio on first interaction
+            resumeAudio();
+            
             try {
                 if (event.code === 'Space') {
                     event.preventDefault();
@@ -1664,6 +1847,13 @@
                         console.log(`🔄 Speed reset to ${gameSpeed}`);
                     }
                 }
+                
+                if (event.code === 'KeyM') {
+                    event.preventDefault();
+                    soundEnabled = !soundEnabled;
+                    const status = soundEnabled ? 'ON' : 'OFF';
+                    console.log(`🔊 Sound ${status}`);
+                }
             } catch (error) {
                 console.error('Keyboard event error:', error);
                 // Don't let keyboard errors crash the game
@@ -1717,6 +1907,9 @@
         if (gameCanvas) {
             gameCanvas.addEventListener('click', function() {
                 if (!isGameReady) return;
+                
+                // Resume audio on first interaction
+                resumeAudio();
                 
                 if (gameRunning) {
                     gameRunning = false;
