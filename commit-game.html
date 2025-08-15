@@ -885,7 +885,7 @@
             victoryFlag.reached = false;
             
             // Create obstacles from monthly commit data
-            fillEmptyMonthsWithSyntheticCommits();
+            // [disabled] fillEmptyMonthsWithSyntheticCommits(); // keep raw commit data; synthetic fill turned off
             createObstacles();
             
             console.log(`📈 Generated ${timelineData.length} timeline points and ${obstacles.length} obstacles`);
@@ -896,6 +896,8 @@
         
         // === Data Optimizer: fill months with zero commits ===
         function fillEmptyMonthsWithSyntheticCommits() {
+            // [disabled] synthetic filler temporarily turned off by request
+            return;
             try {
                 // Build month map with day indices
                 const monthMap = {};
