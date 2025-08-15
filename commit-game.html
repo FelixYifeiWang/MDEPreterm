@@ -212,6 +212,12 @@
             jumpsRemaining: 2,   // Can jump twice
             hasDoubleJumped: false,
             
+            // HP system
+            hp: 10,
+            maxHp: 10,
+            isInvincible: false,
+            invincibilityTimer: 0,
+            
             // Animation (slower speeds)
             animationFrame: 0,
             runAnimationSpeed: 15,  // Keep same animation speed
@@ -223,6 +229,9 @@
             },
             spritesLoaded: false
         };
+
+        // Obstacle system
+        let obstacles = [];
 
         // Initialize the game
         window.addEventListener('load', function() {
@@ -318,6 +327,7 @@
             
             console.log(`📅 Timeline: ${totalDays} days, scale: ${timeScale} px/day`);
             
+            // Process timeline data and create obstacles
             timelineData = [];
             let currentDate = new Date(startDate);
             
@@ -327,17 +337,61 @@
                     commit.date.toISOString().split('T')[0] === dayKey
                 );
                 
-                timelineData.push({
+                const dayData = {
                     date: new Date(currentDate),
                     commits: dayCommits.length,
                     dayIndex: Math.floor((currentDate - startDate) / (1000 * 60 * 60 * 24)),
                     x: Math.floor((currentDate - startDate) / (1000 * 60 * 60 * 24)) * timeScale
-                });
+                };
                 
+                timelineData.push(dayData);
                 currentDate.setDate(currentDate.getDate() + 1);
             }
             
-            console.log(`📈 Generated ${timelineData.length} timeline points`);
+            // Create obstacles from monthly commit data
+            createObstacles();
+            
+            console.log(`📈 Generated ${timelineData.length} timeline points and ${obstacles.length} obstacles`);
+        }
+
+        function createObstacles() {
+            obstacles = [];
+            
+            // Group commits by month and create obstacles
+            const monthlyCommits = {};
+            
+            timelineData.forEach(day => {
+                if (day.commits > 0) {
+                    const monthKey = `${day.date.getFullYear()}-${day.date.getMonth()}`;
+                    if (!monthlyCommits[monthKey]) {
+                        monthlyCommits[monthKey] = {
+                            commits: 0,
+                            x: day.x,
+                            date: day.date
+                        };
+                    }
+                    monthlyCommits[monthKey].commits += day.commits;
+                }
+            });
+            
+            // Create obstacles from monthly data
+            Object.values(monthlyCommits).forEach(month => {
+                if (month.commits > 5) { // Only create obstacles for active months
+                    const obstacleHeight = Math.min(150, month.commits * 3); // Height based on commits
+                    const groundY = gameCanvas.height - 100;
+                    
+                    obstacles.push({
+                        x: month.x + (Math.random() * 200 - 100), // Add some randomness to position
+                        y: groundY - obstacleHeight,
+                        width: 20,
+                        height: obstacleHeight,
+                        commits: month.commits,
+                        passed: false
+                    });
+                }
+            });
+            
+            console.log(`🚧 Created ${obstacles.length} obstacles based on commit activity`);
         }
 
         function createDinoSprites() {
@@ -430,6 +484,7 @@
             
             drawGround();
             drawTimeAxis();
+            drawObstacles();
             drawDino();
             drawUI();
             drawYearChange();
@@ -471,7 +526,67 @@
             }
             
             updateDino();
+            updateObstacles();
+            checkCollisions();
             scrollOffset += gameSpeed;
+        }
+
+        function updateObstacles() {
+            // Update obstacle positions relative to scroll
+            obstacles.forEach(obstacle => {
+                // Mark obstacles as passed when they're behind the dino
+                if (!obstacle.passed && obstacle.x + obstacle.width < dino.x) {
+                    obstacle.passed = true;
+                    
+                    // Bonus points for passing obstacles
+                    try {
+                        const scoreElement = document.getElementById('gameScore');
+                        if (scoreElement) {
+                            const currentScore = parseInt(scoreElement.textContent) || 0;
+                            scoreElement.textContent = currentScore + 5;
+                        }
+                    } catch (error) {
+                        console.warn('Score update error:', error);
+                    }
+                }
+            });
+        }
+
+        function checkCollisions() {
+            if (dino.isInvincible) {
+                dino.invincibilityTimer--;
+                if (dino.invincibilityTimer <= 0) {
+                    dino.isInvincible = false;
+                }
+                return; // Skip collision checking during invincibility
+            }
+            
+            obstacles.forEach(obstacle => {
+                const obstacleScreenX = obstacle.x - scrollOffset;
+                
+                // Check if obstacle is near dino
+                if (obstacleScreenX > -obstacle.width && obstacleScreenX < gameCanvas.width) {
+                    // Simple AABB collision detection
+                    if (dino.x < obstacleScreenX + obstacle.width &&
+                        dino.x + dino.width > obstacleScreenX &&
+                        dino.y < obstacle.y + obstacle.height &&
+                        dino.y + dino.height > obstacle.y) {
+                        
+                        // Collision detected!
+                        dino.hp = Math.max(0, dino.hp - 1);
+                        dino.isInvincible = true;
+                        dino.invincibilityTimer = 90; // 1.5 seconds of invincibility at 60fps
+                        
+                        console.log(`💥 Hit obstacle! HP: ${dino.hp}/${dino.maxHp}`);
+                        
+                        // Check for game over
+                        if (dino.hp <= 0) {
+                            console.log('💀 Game Over!');
+                            // Could add game over logic here
+                        }
+                    }
+                }
+            });
         }
 
         function updateDino() {
@@ -506,6 +621,48 @@
             }
         }
 
+        function drawObstacles() {
+            obstacles.forEach(obstacle => {
+                const obstacleScreenX = obstacle.x - scrollOffset;
+                
+                // Only draw obstacles that are visible on screen
+                if (obstacleScreenX > -obstacle.width && obstacleScreenX < gameCanvas.width + obstacle.width) {
+                    // Create gradient based on commit count
+                    const intensity = Math.min(1, obstacle.commits / 50); // Normalize to 0-1
+                    const gradient = gameCtx.createLinearGradient(0, obstacle.y, 0, obstacle.y + obstacle.height);
+                    
+                    // Color based on intensity: green for low, red for high
+                    const red = Math.floor(255 * intensity);
+                    const green = Math.floor(255 * (1 - intensity * 0.5));
+                    const blue = Math.floor(100 * (1 - intensity));
+                    
+                    gradient.addColorStop(0, `rgba(${red}, ${green}, ${blue}, 0.9)`);
+                    gradient.addColorStop(1, `rgba(${Math.floor(red * 0.7)}, ${Math.floor(green * 0.7)}, ${Math.floor(blue * 0.7)}, 0.9)`);
+                    
+                    // Draw main obstacle
+                    gameCtx.fillStyle = gradient;
+                    gameCtx.fillRect(obstacleScreenX, obstacle.y, obstacle.width, obstacle.height);
+                    
+                    // Draw border
+                    gameCtx.strokeStyle = '#30363d';
+                    gameCtx.lineWidth = 2;
+                    gameCtx.strokeRect(obstacleScreenX, obstacle.y, obstacle.width, obstacle.height);
+                    
+                    // Draw commit count on top
+                    gameCtx.fillStyle = '#ffffff';
+                    gameCtx.font = 'bold 12px monospace';
+                    gameCtx.textAlign = 'center';
+                    gameCtx.fillText(obstacle.commits.toString(), obstacleScreenX + obstacle.width / 2, obstacle.y - 5);
+                    
+                    // Add small shadow for text readability
+                    gameCtx.fillStyle = '#000000';
+                    gameCtx.fillText(obstacle.commits.toString(), obstacleScreenX + obstacle.width / 2 + 1, obstacle.y - 4);
+                    gameCtx.fillStyle = '#ffffff';
+                    gameCtx.fillText(obstacle.commits.toString(), obstacleScreenX + obstacle.width / 2, obstacle.y - 5);
+                }
+            });
+        }
+
         function drawDino() {
             if (!dino.spritesLoaded) return;
             
@@ -521,6 +678,11 @@
                     currentSprite = dino.sprites.running[frameIndex];
                 }
                 
+                // Apply invincibility effect (flashing)
+                if (dino.isInvincible && Math.floor(dino.invincibilityTimer / 10) % 2 === 0) {
+                    gameCtx.globalAlpha = 0.5; // Make dino semi-transparent when flashing
+                }
+                
                 if (currentSprite && currentSprite.complete) {
                     gameCtx.drawImage(currentSprite, dino.x, dino.y, dino.width, dino.height);
                 } else {
@@ -528,6 +690,10 @@
                     gameCtx.fillStyle = '#39d353';
                     gameCtx.fillRect(dino.x, dino.y, dino.width, dino.height);
                 }
+                
+                // Reset alpha
+                gameCtx.globalAlpha = 1.0;
+                
             } catch (error) {
                 console.warn('Dino drawing error:', error);
                 // Fallback: draw simple rectangle
@@ -598,6 +764,7 @@
         }
 
         function drawUI() {
+            // Progress bar
             const progressBarWidth = 300;
             const progressBarHeight = 8;
             const progressX = gameCanvas.width - progressBarWidth - 30;
@@ -619,6 +786,51 @@
             gameCtx.strokeStyle = '#30363d';
             gameCtx.lineWidth = 1;
             gameCtx.strokeRect(progressX, progressY, progressBarWidth, progressBarHeight);
+            
+            // HP Display (left side)
+            const hpX = 30;
+            const hpY = 30;
+            const hpBarWidth = 120;
+            const hpBarHeight = 12;
+            
+            // HP background
+            gameCtx.fillStyle = 'rgba(33, 38, 45, 0.8)';
+            gameCtx.fillRect(hpX - 5, hpY - 5, hpBarWidth + 50, hpBarHeight + 10);
+            
+            // HP bar background
+            gameCtx.fillStyle = '#30363d';
+            gameCtx.fillRect(hpX + 25, hpY, hpBarWidth, hpBarHeight);
+            
+            // HP bar fill
+            const hpPercent = dino.hp / dino.maxHp;
+            let hpColor;
+            if (hpPercent > 0.6) {
+                hpColor = '#39d353'; // Green
+            } else if (hpPercent > 0.3) {
+                hpColor = '#ffd700'; // Yellow
+            } else {
+                hpColor = '#ff4757'; // Red
+            }
+            
+            gameCtx.fillStyle = hpColor;
+            gameCtx.fillRect(hpX + 25, hpY, hpBarWidth * hpPercent, hpBarHeight);
+            
+            // HP bar border
+            gameCtx.strokeStyle = '#30363d';
+            gameCtx.lineWidth = 1;
+            gameCtx.strokeRect(hpX + 25, hpY, hpBarWidth, hpBarHeight);
+            
+            // HP text
+            gameCtx.fillStyle = '#f0f6fc';
+            gameCtx.font = 'bold 12px monospace';
+            gameCtx.textAlign = 'left';
+            gameCtx.fillText('HP', hpX, hpY + 9);
+            
+            // HP numbers
+            gameCtx.fillStyle = '#f0f6fc';
+            gameCtx.font = '10px monospace';
+            gameCtx.textAlign = 'center';
+            gameCtx.fillText(`${dino.hp}/${dino.maxHp}`, hpX + 25 + hpBarWidth / 2, hpY + 8);
         }
 
         function drawYearChange() {
