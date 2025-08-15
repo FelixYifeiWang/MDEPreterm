@@ -925,7 +925,7 @@
                     }
 
                     // Generate a total for the month, distribute across chosen days
-                    let monthTotal = Math.floor(5 + Math.random() * 20); // 5..24 commits
+                    let monthTotal = Math.floor(5 + Math.random() * 296); // 5..300 commits
                     const lang = languagePool[Math.floor(Math.random() * languagePool.length)];
 
                     chosen.forEach((di, i) => {
@@ -1733,7 +1733,7 @@ function createObstacles() {
                         if (dino.isSuperSaiyan) {
                             // Super Saiyan mode - make tree fall!
                             makeTreeFall(obstacle, obstacleIndex);
-                            playTreeFallSound();
+                            // No sound or red filter in Super mode
                             
                             const langInfo = getLanguageInfo(obstacle.language);
                             const langDisplay = langInfo.icon ? `${obstacle.language} ${langInfo.icon}` : obstacle.language;
