@@ -200,6 +200,185 @@
             }
         }
 
+        // Seasonal background system
+        function getSeasonFromMonth(month) {
+            // month is 0-indexed (0 = January, 11 = December)
+            if (month >= 2 && month <= 4) return 'spring';  // March, April, May
+            if (month >= 5 && month <= 7) return 'summer';  // June, July, August  
+            if (month >= 8 && month <= 10) return 'autumn'; // September, October, November
+            return 'winter'; // December, January, February
+        }
+
+        function getSeasonalGradient(season) {
+            const height = gameCanvas.height;
+            const gradient = gameCtx.createLinearGradient(0, 0, 0, height);
+            
+            switch(season) {
+                case 'spring':
+                    // Fresh spring colors - light blues and greens
+                    gradient.addColorStop(0, '#87CEEB');   // Sky blue
+                    gradient.addColorStop(0.4, '#98FB98'); // Pale green
+                    gradient.addColorStop(0.7, '#90EE90'); // Light green
+                    gradient.addColorStop(1, '#228B22');   // Forest green
+                    break;
+                    
+                case 'summer':
+                    // Bright summer sky
+                    gradient.addColorStop(0, '#1E90FF');   // Dodger blue
+                    gradient.addColorStop(0.3, '#00BFFF'); // Deep sky blue
+                    gradient.addColorStop(0.6, '#32CD32'); // Lime green
+                    gradient.addColorStop(1, '#228B22');   // Forest green
+                    break;
+                    
+                case 'autumn':
+                    // Warm autumn colors
+                    gradient.addColorStop(0, '#FF6347');   // Tomato
+                    gradient.addColorStop(0.3, '#FF8C00'); // Dark orange
+                    gradient.addColorStop(0.6, '#DAA520'); // Goldenrod
+                    gradient.addColorStop(1, '#8B4513');   // Saddle brown
+                    break;
+                    
+                case 'winter':
+                    // Cold winter palette
+                    gradient.addColorStop(0, '#778899');   // Light slate gray
+                    gradient.addColorStop(0.4, '#696969'); // Dim gray
+                    gradient.addColorStop(0.7, '#2F4F4F'); // Dark slate gray
+                    gradient.addColorStop(1, '#191970');   // Midnight blue
+                    break;
+                    
+                default:
+                    // Fallback to original gradient
+                    gradient.addColorStop(0, '#0969da');
+                    gradient.addColorStop(0.7, '#0550ae');
+                    gradient.addColorStop(1, '#1f883d');
+            }
+            
+            return gradient;
+        }
+
+        function updateCurrentSeason() {
+            // Calculate the rightmost visible date
+            const rightEdgeOffset = scrollOffset + gameCanvas.width;
+            const rightEdgeTimelineDays = Math.floor(rightEdgeOffset / timeScale);
+            const rightEdgeDate = new Date(startDate);
+            rightEdgeDate.setDate(rightEdgeDate.getDate() + rightEdgeTimelineDays);
+            
+            // Get the season for the rightmost month
+            const newSeason = getSeasonFromMonth(rightEdgeDate.getMonth());
+            
+            // Check if season changed
+            if (newSeason !== currentSeason) {
+                const oldSeason = currentSeason;
+                currentSeason = newSeason;
+                seasonTransition = 60; // 1 second of transition effect
+                
+                const seasonEmojis = {
+                    spring: '🌸',
+                    summer: '☀️', 
+                    autumn: '🍂',
+                    winter: '❄️'
+                };
+                
+                console.log(`🌍 Season changed: ${oldSeason} ${seasonEmojis[oldSeason]} → ${newSeason} ${seasonEmojis[newSeason]} (${rightEdgeDate.toLocaleDateString('en', { month: 'long', year: 'numeric' })})`);
+            }
+            
+            // Decrease transition timer
+            if (seasonTransition > 0) {
+                seasonTransition--;
+            }
+        }
+
+        function drawSeasonalDecorations() {
+            const groundY = gameCanvas.height - 100;
+            
+            switch(currentSeason) {
+                case 'spring':
+                    // Draw occasional cherry blossoms floating down
+                    if (Math.random() < 0.03) {
+                        for (let i = 0; i < 3; i++) {
+                            const x = Math.random() * gameCanvas.width;
+                            const y = Math.random() * (groundY * 0.6);
+                            gameCtx.fillStyle = '#FFB6C1'; // Light pink
+                            gameCtx.beginPath();
+                            gameCtx.arc(x, y, 2, 0, Math.PI * 2);
+                            gameCtx.fill();
+                        }
+                    }
+                    break;
+                    
+                case 'summer':
+                    // Draw occasional sun rays
+                    if (Math.random() < 0.02) {
+                        gameCtx.strokeStyle = 'rgba(255, 255, 0, 0.3)';
+                        gameCtx.lineWidth = 2;
+                        gameCtx.beginPath();
+                        const sunX = gameCanvas.width * 0.8;
+                        const sunY = gameCanvas.height * 0.2;
+                        for (let i = 0; i < 8; i++) {
+                            const angle = (i / 8) * Math.PI * 2;
+                            const rayLength = 30 + Math.sin(Date.now() * 0.003 + i) * 10;
+                            gameCtx.moveTo(sunX, sunY);
+                            gameCtx.lineTo(
+                                sunX + Math.cos(angle) * rayLength,
+                                sunY + Math.sin(angle) * rayLength
+                            );
+                        }
+                        gameCtx.stroke();
+                    }
+                    break;
+                    
+                case 'autumn':
+                    // Draw falling leaves
+                    if (Math.random() < 0.05) {
+                        for (let i = 0; i < 5; i++) {
+                            const x = Math.random() * gameCanvas.width;
+                            const y = Math.random() * (groundY * 0.8);
+                            const leafColors = ['#FF6347', '#FF8C00', '#DAA520', '#CD853F'];
+                            gameCtx.fillStyle = leafColors[Math.floor(Math.random() * leafColors.length)];
+                            
+                            // Draw simple leaf shape
+                            gameCtx.save();
+                            gameCtx.translate(x, y);
+                            gameCtx.rotate(Math.random() * Math.PI * 2);
+                            gameCtx.beginPath();
+                            gameCtx.ellipse(0, 0, 3, 6, 0, 0, Math.PI * 2);
+                            gameCtx.fill();
+                            gameCtx.restore();
+                        }
+                    }
+                    break;
+                    
+                case 'winter':
+                    // Draw falling snowflakes
+                    if (Math.random() < 0.08) {
+                        for (let i = 0; i < 8; i++) {
+                            const x = Math.random() * gameCanvas.width;
+                            const y = Math.random() * (groundY * 0.9);
+                            gameCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                            gameCtx.beginPath();
+                            gameCtx.arc(x, y, 1 + Math.random() * 2, 0, Math.PI * 2);
+                            gameCtx.fill();
+                            
+                            // Draw snowflake arms
+                            gameCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                            gameCtx.lineWidth = 1;
+                            gameCtx.beginPath();
+                            for (let j = 0; j < 6; j++) {
+                                const angle = (j / 6) * Math.PI * 2;
+                                const armLength = 3;
+                                gameCtx.moveTo(x, y);
+                                gameCtx.lineTo(
+                                    x + Math.cos(angle) * armLength,
+                                    y + Math.sin(angle) * armLength
+                                );
+                            }
+                            gameCtx.stroke();
+                        }
+                    }
+                    break;
+            }
+        }
+
         // Play collision sound based on tree size
         function playCollisionSound(commits) {
             if (!soundEnabled || !audioContext) return;
@@ -357,6 +536,8 @@
         let startDate = null;
         let endDate = null;
         let totalDays = 0;
+        let currentSeason = 'spring';
+        let seasonTransition = 0;
 
         // Dino character with sprite animation
         let dino = {
@@ -739,6 +920,7 @@
         function startGame() {
             console.log('🚀 Game started!');
             console.log('🎮 Controls: SPACE=Jump, ↑↓=Speed, R=Restart, M=Sound Toggle, Click=Pause');
+            console.log('🌍 Watch the seasons change as you journey through time! 🌸☀️🍂❄️');
             gameRunning = true;
             scrollOffset = 0;
             gameLoop();
@@ -755,6 +937,7 @@
             gameCtx.translate(screenShake.x, screenShake.y);
             
             drawGround();
+            drawSeasonalDecorations();
             drawTimeAxis();
             drawLanguageDecorations();
             drawObstacles();
@@ -1052,6 +1235,9 @@
                 updateVictoryEffect();
                 return; // Stop scrolling and other updates
             }
+            
+            // Update current season based on rightmost visible date
+            updateCurrentSeason();
             
             const rightEdgeOffset = scrollOffset + gameCanvas.width;
             const rightEdgeTimelineDays = Math.floor(rightEdgeOffset / timeScale);
@@ -1572,13 +1758,17 @@
         }
 
         function clearCanvas() {
-            const gradient = gameCtx.createLinearGradient(0, 0, 0, gameCanvas.height);
-            gradient.addColorStop(0, '#0969da');
-            gradient.addColorStop(0.7, '#0550ae');
-            gradient.addColorStop(1, '#1f883d');
-            
-            gameCtx.fillStyle = gradient;
+            // Use seasonal gradient instead of static one
+            const seasonalGradient = getSeasonalGradient(currentSeason);
+            gameCtx.fillStyle = seasonalGradient;
             gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            
+            // Add season transition effect
+            if (seasonTransition > 0) {
+                const alpha = seasonTransition / 60;
+                gameCtx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.3})`;
+                gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            }
         }
 
         function drawGround() {
@@ -1708,6 +1898,28 @@
             gameCtx.font = 'bold 12px monospace';
             gameCtx.textAlign = 'left';
             gameCtx.fillText(`🔊 ${soundEnabled ? 'ON' : 'OFF'} (M to toggle)`, soundX, soundY);
+            
+            // Current season indicator (bottom-right)
+            const seasonEmojis = {
+                spring: '🌸 Spring',
+                summer: '☀️ Summer', 
+                autumn: '🍂 Autumn',
+                winter: '❄️ Winter'
+            };
+            const seasonX = gameCanvas.width - 30;
+            const seasonY = gameCanvas.height - 30;
+            gameCtx.fillStyle = '#f0f6fc';
+            gameCtx.font = 'bold 14px monospace';
+            gameCtx.textAlign = 'right';
+            
+            // Add glow effect if transitioning
+            if (seasonTransition > 0) {
+                gameCtx.shadowColor = '#ffffff';
+                gameCtx.shadowBlur = 10;
+            }
+            
+            gameCtx.fillText(seasonEmojis[currentSeason], seasonX, seasonY);
+            gameCtx.shadowBlur = 0;
         }
 
         function drawYearChange() {
@@ -1884,6 +2096,10 @@
             yearChangeText = '';
             yearChangeTimer = 0;
             yearChangeAlpha = 0;
+            
+            // Reset seasonal state
+            currentSeason = 'spring';
+            seasonTransition = 0;
             
             // Reset victory state
             victoryFlag.reached = false;
