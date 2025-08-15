@@ -462,7 +462,7 @@
             });
             
             console.log(`🌳 Created ${obstacles.length} trees from ALL commits! (Even tiny 1-commit saplings are now visible!)`);
-            console.log(`📏 Tree heights: ${baseHeight}px minimum + (commits × 1.5)px, max 500px`);
+            console.log(`📏 Tree heights: 15px minimum + (commits × 1.5)px, max 500px`);
         }
 
         function addScreenShake(intensity, duration) {
@@ -1714,22 +1714,26 @@
         }
 
         // Click to pause/resume
-        gameCanvas.addEventListener('click', function() {
-            if (!isGameReady) return;
-            
-            if (gameRunning) {
-                gameRunning = false;
-                console.log('⏸️ Game paused');
-            } else {
-                gameRunning = true;
-                gameLoop();
-                console.log('▶️ Game resumed');
-            }
-        });
+        if (gameCanvas) {
+            gameCanvas.addEventListener('click', function() {
+                if (!isGameReady) return;
+                
+                if (gameRunning) {
+                    gameRunning = false;
+                    console.log('⏸️ Game paused');
+                } else {
+                    gameRunning = true;
+                    gameLoop();
+                    console.log('▶️ Game resumed');
+                }
+            });
 
-        gameCanvas.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-        });
+            gameCanvas.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+            });
+        } else {
+            console.error('❌ gameCanvas is null - cannot add event listeners');
+        }
 
         document.addEventListener('visibilitychange', function() {
             if (document.hidden && gameRunning) {
