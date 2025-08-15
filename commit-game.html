@@ -204,9 +204,13 @@
             height: 50,
             isJumping: false,
             jumpVelocity: 0,
-            gravity: 0.8,
-            jumpPower: -15,
+            gravity: 0.5,        // Reduced gravity for slower, more controlled jumps
+            jumpPower: -12,      // Slightly reduced jump power to compensate
             groundY: 0,
+            
+            // Double jump system
+            jumpsRemaining: 2,   // Can jump twice
+            hasDoubleJumped: false,
             
             // Animation (slower speeds)
             animationFrame: 0,
@@ -482,10 +486,18 @@
                     dino.y = dino.groundY;
                     dino.isJumping = false;
                     dino.jumpVelocity = 0;
-                    console.log('🏃 Dino landed');
+                    
+                    // Reset double jump when landing
+                    dino.jumpsRemaining = 2;
+                    dino.hasDoubleJumped = false;
+                    
+                    console.log('🏃 Dino landed - double jump recharged!');
                 }
             } else {
                 dino.y = dino.groundY;
+                // Make sure jumps are available when on ground
+                dino.jumpsRemaining = 2;
+                dino.hasDoubleJumped = false;
             }
             
             // Update running animation (only when not jumping)
@@ -591,9 +603,11 @@
             const progressX = gameCanvas.width - progressBarWidth - 30;
             const progressY = 30;
             
+            // Progress bar background
             gameCtx.fillStyle = 'rgba(33, 38, 45, 0.8)';
             gameCtx.fillRect(progressX - 5, progressY - 5, progressBarWidth + 10, progressBarHeight + 10);
             
+            // Progress bar fill
             const maxScrollOffset = totalDays * timeScale;
             const progress = Math.min(1, scrollOffset / maxScrollOffset);
             const isComplete = progress >= 1;
@@ -601,9 +615,45 @@
             gameCtx.fillStyle = isComplete ? '#ff6b6b' : '#39d353';
             gameCtx.fillRect(progressX, progressY, progressBarWidth * progress, progressBarHeight);
             
+            // Progress bar border
             gameCtx.strokeStyle = '#30363d';
             gameCtx.lineWidth = 1;
             gameCtx.strokeRect(progressX, progressY, progressBarWidth, progressBarHeight);
+            
+            // Double jump indicator (left side)
+            const jumpIndicatorX = 30;
+            const jumpIndicatorY = 30;
+            
+            gameCtx.fillStyle = 'rgba(33, 38, 45, 0.8)';
+            gameCtx.fillRect(jumpIndicatorX - 5, jumpIndicatorY - 5, 100, 25);
+            
+            // Jump icons
+            for (let i = 0; i < 2; i++) {
+                const iconX = jumpIndicatorX + i * 25;
+                const iconY = jumpIndicatorY + 5;
+                
+                if (i < dino.jumpsRemaining) {
+                    // Available jump - bright
+                    gameCtx.fillStyle = '#39d353';
+                } else {
+                    // Used jump - dim
+                    gameCtx.fillStyle = '#30363d';
+                }
+                
+                // Draw simple jump icon (triangle pointing up)
+                gameCtx.beginPath();
+                gameCtx.moveTo(iconX + 8, iconY);
+                gameCtx.lineTo(iconX + 4, iconY + 8);
+                gameCtx.lineTo(iconX + 12, iconY + 8);
+                gameCtx.closePath();
+                gameCtx.fill();
+            }
+            
+            // Double jump text
+            gameCtx.fillStyle = '#7d8590';
+            gameCtx.font = '10px monospace';
+            gameCtx.textAlign = 'left';
+            gameCtx.fillText('Double Jump', jumpIndicatorX + 55, jumpIndicatorY + 12);
         }
 
         function drawYearChange() {
@@ -681,21 +731,36 @@
                 if (event.code === 'Space') {
                     event.preventDefault();
                     
-                    if (!dino.isJumping) {
-                        dino.isJumping = true;
-                        dino.jumpVelocity = dino.jumpPower;
-                        console.log('🦘 Dino jumps! (using run3.png)');
+                    // Check if we can jump (either on ground or have double jump available)
+                    if (dino.jumpsRemaining > 0) {
+                        // First jump or double jump
+                        if (!dino.isJumping) {
+                            // First jump from ground
+                            dino.isJumping = true;
+                            dino.jumpVelocity = dino.jumpPower;
+                            dino.jumpsRemaining--;
+                            console.log('🦘 Dino first jump! (using run3.png)');
+                        } else if (dino.jumpsRemaining > 0 && !dino.hasDoubleJumped) {
+                            // Double jump in air
+                            dino.jumpVelocity = dino.jumpPower; // Reset velocity for double jump
+                            dino.jumpsRemaining--;
+                            dino.hasDoubleJumped = true;
+                            console.log('✨ Dino DOUBLE JUMP! (二段跳)');
+                        }
                         
                         // Safely update score
                         try {
                             const scoreElement = document.getElementById('gameScore');
                             if (scoreElement) {
                                 const currentScore = parseInt(scoreElement.textContent) || 0;
-                                scoreElement.textContent = currentScore + 10;
+                                const jumpBonus = dino.hasDoubleJumped ? 20 : 10; // Double jump gives more points
+                                scoreElement.textContent = currentScore + jumpBonus;
                             }
                         } catch (scoreError) {
                             console.warn('Score update error:', scoreError);
                         }
+                    } else {
+                        console.log('❌ No jumps remaining!');
                     }
                     return; // Important: prevent further processing
                 }
