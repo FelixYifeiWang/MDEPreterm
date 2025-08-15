@@ -490,7 +490,10 @@
             currentDate.setDate(currentDate.getDate() + currentDays);
             
             if (currentDate >= startDate && currentDate <= endDate) {
-                const currentDateStr = currentDate.toLocaleDateString();
+                const currentDateStr = currentDate.toLocaleDateString('en', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
                 gameCtx.fillText(`Current: ${currentDateStr}`, 20, 40);
             }
         }
