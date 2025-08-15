@@ -201,6 +201,19 @@
         let gameCanvas = null;
         let gameCtx = null;
         let isGameReady = false;
+        let gameRunning = false;
+        
+        // Game mechanics
+        let gameSpeed = 2;
+        let scrollOffset = 0;
+        let animationId = null;
+        
+        // Time axis variables
+        let timelineData = [];
+        let timeScale = 1; // pixels per day
+        let startDate = null;
+        let endDate = null;
+        let totalDays = 0;
 
         // Initialize the game
         window.addEventListener('load', function() {
@@ -209,8 +222,23 @@
             gameCanvas = document.getElementById('gameCanvas');
             gameCtx = gameCanvas.getContext('2d');
             
+            // Make canvas responsive
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
             loadGameData();
         });
+
+        function resizeCanvas() {
+            const container = gameCanvas.parentElement;
+            const maxWidth = Math.min(window.innerWidth - 40, 1400);
+            const maxHeight = Math.min(window.innerHeight - 160, 500);
+            
+            gameCanvas.width = maxWidth;
+            gameCanvas.height = maxHeight;
+            
+            console.log(`📏 Canvas resized to ${gameCanvas.width}x${gameCanvas.height}`);
+        }
 
         function loadGameData() {
             updateLoadingText('Loading commit data...');
@@ -236,8 +264,9 @@
                     throw new Error('No commit data available');
                 }
                 
-                updateLoadingText('Processing commit history...');
+                updateLoadingText('Processing commit timeline...');
                 setTimeout(() => {
+                    processTimelineData();
                     initializeGame();
                 }, 1000);
                 
@@ -251,12 +280,74 @@
             }
         }
 
+        function processTimelineData() {
+            console.log('⏰ Processing timeline data...');
+            
+            // Collect all commit dates
+            let allCommits = [];
+            gameData.commitData.forEach(repo => {
+                repo.commits.forEach(commit => {
+                    allCommits.push({
+                        date: new Date(commit.commit.author.date),
+                        repo: repo.repo.name,
+                        message: commit.commit.message
+                    });
+                });
+            });
+            
+            // Sort by date
+            allCommits.sort((a, b) => a.date - b.date);
+            
+            if (allCommits.length === 0) {
+                throw new Error('No commits found');
+            }
+            
+            // Set timeline bounds
+            startDate = new Date(allCommits[0].date);
+            endDate = new Date(allCommits[allCommits.length - 1].date);
+            
+            // Add some padding to the timeline
+            startDate.setDate(startDate.getDate() - 30);
+            endDate.setDate(endDate.getDate() + 30);
+            
+            totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+            
+            // Calculate time scale to fit the screen
+            const screenWidth = gameCanvas.width;
+            timeScale = Math.max(1, screenWidth / totalDays * 3); // 3x screen width for scrolling
+            
+            console.log(`📅 Timeline: ${totalDays} days, scale: ${timeScale} px/day`);
+            console.log(`📊 Date range: ${startDate.toDateString()} → ${endDate.toDateString()}`);
+            
+            // Group commits by day for obstacle generation
+            timelineData = [];
+            let currentDate = new Date(startDate);
+            
+            while (currentDate <= endDate) {
+                const dayKey = currentDate.toISOString().split('T')[0];
+                const dayCommits = allCommits.filter(commit => 
+                    commit.date.toISOString().split('T')[0] === dayKey
+                );
+                
+                timelineData.push({
+                    date: new Date(currentDate),
+                    commits: dayCommits.length,
+                    dayIndex: Math.floor((currentDate - startDate) / (1000 * 60 * 60 * 24)),
+                    x: Math.floor((currentDate - startDate) / (1000 * 60 * 60 * 24)) * timeScale
+                });
+                
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            console.log(`📈 Generated ${timelineData.length} timeline points`);
+        }
+
         function initializeGame() {
             updateLoadingText('Setting up game world...');
             
             // Update player info
             document.getElementById('playerInfo').textContent = 
-                `${gameData.userInfo.name} • ${gameData.totalCommits} commits to survive!`;
+                `${gameData.userInfo.name} • ${gameData.totalCommits} commits • ${totalDays} days to survive!`;
             
             // Load high score
             const savedHighScore = localStorage.getItem('commitDinoHighScore') || 0;
@@ -273,49 +364,164 @@
 
         function startGame() {
             console.log('🚀 Game started!');
-            
-            // Clear canvas
-            gameCtx.fillStyle = '#0d1117';
-            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
-            
-            // Draw placeholder game content
-            gameCtx.fillStyle = '#f0f6fc';
-            gameCtx.font = '24px Arial';
-            gameCtx.textAlign = 'center';
-            gameCtx.fillText('🚧 Game Engine Coming Soon!', gameCanvas.width / 2, gameCanvas.height / 2 - 40);
-            
-            gameCtx.font = '16px Arial';
-            gameCtx.fillStyle = '#7d8590';
-            gameCtx.fillText(`Ready to process ${gameData.totalCommits} commits`, gameCanvas.width / 2, gameCanvas.height / 2);
-            gameCtx.fillText(`from ${gameData.commitData.length} repositories`, gameCanvas.width / 2, gameCanvas.height / 2 + 25);
-            
-            gameCtx.fillStyle = '#1f6feb';
-            gameCtx.fillText('Press SPACE to jump when ready!', gameCanvas.width / 2, gameCanvas.height / 2 + 60);
-            
-            // Add some visual elements
-            drawPlaceholderElements();
+            gameRunning = true;
+            scrollOffset = 0;
+            gameLoop();
         }
 
-        function drawPlaceholderElements() {
-            // Draw ground line
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            // Clear canvas
+            clearCanvas();
+            
+            // Update game state
+            updateGame();
+            
+            // Draw everything
+            drawGround();
+            drawTimeAxis();
+            drawUI();
+            
+            // Continue loop
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function updateGame() {
+            // Move the world (scroll)
+            scrollOffset += gameSpeed;
+        }
+
+        function clearCanvas() {
+            // Sky gradient
+            const gradient = gameCtx.createLinearGradient(0, 0, 0, gameCanvas.height);
+            gradient.addColorStop(0, '#0969da');
+            gradient.addColorStop(0.7, '#0550ae');
+            gradient.addColorStop(1, '#1f883d');
+            
+            gameCtx.fillStyle = gradient;
+            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+        }
+
+        function drawGround() {
+            const groundHeight = 100;
+            const groundY = gameCanvas.height - groundHeight;
+            
+            // Main ground
+            gameCtx.fillStyle = '#21262d';
+            gameCtx.fillRect(0, groundY, gameCanvas.width, groundHeight);
+            
+            // Ground pattern (represents the timeline)
             gameCtx.strokeStyle = '#30363d';
-            gameCtx.lineWidth = 2;
+            gameCtx.lineWidth = 1;
+            
+            // Draw timeline grid lines
+            const gridSpacing = timeScale * 7; // Weekly markers
+            const startX = -(scrollOffset % gridSpacing);
+            
+            for (let x = startX; x < gameCanvas.width + gridSpacing; x += gridSpacing) {
+                gameCtx.beginPath();
+                gameCtx.moveTo(x, groundY);
+                gameCtx.lineTo(x, groundY + 20);
+                gameCtx.stroke();
+            }
+            
+            // Surface line
+            gameCtx.strokeStyle = '#39d353';
+            gameCtx.lineWidth = 3;
             gameCtx.beginPath();
-            gameCtx.moveTo(0, gameCanvas.height - 80);
-            gameCtx.lineTo(gameCanvas.width, gameCanvas.height - 80);
+            gameCtx.moveTo(0, groundY);
+            gameCtx.lineTo(gameCanvas.width, groundY);
             gameCtx.stroke();
             
-            // Draw placeholder dino
-            gameCtx.fillStyle = '#39d353';
-            gameCtx.fillRect(100, gameCanvas.height - 120, 30, 40);
-            
-            // Draw some placeholder obstacles
-            for (let i = 0; i < 3; i++) {
-                const x = 400 + (i * 200);
-                const height = 20 + (i * 15);
-                gameCtx.fillStyle = '#ff6b6b';
-                gameCtx.fillRect(x, gameCanvas.height - 80 - height, 20, height);
+            // Add some surface details
+            gameCtx.fillStyle = '#26a641';
+            for (let x = -(scrollOffset % 40); x < gameCanvas.width; x += 40) {
+                gameCtx.fillRect(x, groundY - 2, 20, 2);
             }
+        }
+
+        function drawTimeAxis() {
+            const groundY = gameCanvas.height - 100;
+            
+            // Calculate current timeline position
+            const currentTimelineX = scrollOffset;
+            
+            // Draw time markers
+            gameCtx.fillStyle = '#f0f6fc';
+            gameCtx.font = '12px monospace';
+            gameCtx.textAlign = 'center';
+            
+            const markerSpacing = timeScale * 30; // Monthly markers
+            const startX = -(currentTimelineX % markerSpacing);
+            
+            for (let x = startX; x < gameCanvas.width + markerSpacing; x += markerSpacing) {
+                // Calculate what date this represents
+                const timelineDays = Math.floor((currentTimelineX + x) / timeScale);
+                const markerDate = new Date(startDate);
+                markerDate.setDate(markerDate.getDate() + timelineDays);
+                
+                if (markerDate >= startDate && markerDate <= endDate) {
+                    // Draw marker line
+                    gameCtx.strokeStyle = '#7d8590';
+                    gameCtx.lineWidth = 2;
+                    gameCtx.beginPath();
+                    gameCtx.moveTo(x, groundY - 30);
+                    gameCtx.lineTo(x, groundY);
+                    gameCtx.stroke();
+                    
+                    // Draw date label
+                    const dateLabel = markerDate.toLocaleDateString('en', { 
+                        month: 'short', 
+                        year: markerDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined 
+                    });
+                    
+                    gameCtx.fillStyle = '#7d8590';
+                    gameCtx.fillText(dateLabel, x, groundY - 35);
+                }
+            }
+            
+            // Draw current position indicator
+            gameCtx.fillStyle = '#1f6feb';
+            gameCtx.font = 'bold 14px monospace';
+            gameCtx.textAlign = 'left';
+            
+            const currentDays = Math.floor(currentTimelineX / timeScale);
+            const currentDate = new Date(startDate);
+            currentDate.setDate(currentDate.getDate() + currentDays);
+            
+            if (currentDate >= startDate && currentDate <= endDate) {
+                const currentDateStr = currentDate.toLocaleDateString();
+                gameCtx.fillText(`Current: ${currentDateStr}`, 20, 40);
+            }
+        }
+
+        function drawUI() {
+            // Draw progress bar
+            const progressBarWidth = 200;
+            const progressBarHeight = 6;
+            const progressX = gameCanvas.width - progressBarWidth - 20;
+            const progressY = 60;
+            
+            // Background
+            gameCtx.fillStyle = 'rgba(33, 38, 45, 0.8)';
+            gameCtx.fillRect(progressX - 5, progressY - 5, progressBarWidth + 10, progressBarHeight + 10);
+            
+            // Progress
+            const progress = Math.min(1, scrollOffset / (totalDays * timeScale));
+            gameCtx.fillStyle = '#39d353';
+            gameCtx.fillRect(progressX, progressY, progressBarWidth * progress, progressBarHeight);
+            
+            // Border
+            gameCtx.strokeStyle = '#30363d';
+            gameCtx.lineWidth = 1;
+            gameCtx.strokeRect(progressX, progressY, progressBarWidth, progressBarHeight);
+            
+            // Progress text
+            gameCtx.fillStyle = '#f0f6fc';
+            gameCtx.font = '12px monospace';
+            gameCtx.textAlign = 'right';
+            gameCtx.fillText(`${(progress * 100).toFixed(1)}% complete`, progressX + progressBarWidth, progressY - 8);
         }
 
         function updateLoadingText(text) {
@@ -334,7 +540,6 @@
         }
 
         function handleErrorAction() {
-            // Go back to previous page
             history.back();
         }
 
@@ -344,11 +549,25 @@
             
             if (event.code === 'Space') {
                 event.preventDefault();
-                console.log('🦘 JUMP! (Game mechanics coming next)');
+                console.log('🦘 JUMP! (Character mechanics coming next)');
                 
                 // Update score as placeholder
                 const currentScore = parseInt(document.getElementById('gameScore').textContent);
                 document.getElementById('gameScore').textContent = currentScore + 10;
+            }
+        });
+
+        // Handle click to start/pause
+        gameCanvas.addEventListener('click', function() {
+            if (!isGameReady) return;
+            
+            if (gameRunning) {
+                gameRunning = false;
+                console.log('⏸️ Game paused');
+            } else {
+                gameRunning = true;
+                gameLoop();
+                console.log('▶️ Game resumed');
             }
         });
 
@@ -359,10 +578,9 @@
 
         // Handle page visibility changes
         document.addEventListener('visibilitychange', function() {
-            if (document.hidden && isGameReady) {
+            if (document.hidden && gameRunning) {
+                gameRunning = false;
                 console.log('⏸️ Game paused (tab hidden)');
-            } else if (isGameReady) {
-                console.log('▶️ Game resumed');
             }
         });
     </script>
