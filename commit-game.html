@@ -204,7 +204,7 @@
         let gameRunning = false;
         
         // Game mechanics
-        let gameSpeed = 0.15; // Even slower - about 1 day per second
+        let gameSpeed = 0.8; // Normal speed - about 3-4 days per second
         let scrollOffset = 0;
         let animationId = null;
         
@@ -452,7 +452,7 @@
             gameCtx.font = '12px monospace';
             gameCtx.textAlign = 'center';
             
-            const markerSpacing = timeScale * 30; // Monthly markers
+            const markerSpacing = timeScale * 60; // Monthly markers every 2 months for better spacing
             const startX = -(currentTimelineX % markerSpacing);
             
             for (let x = startX; x < gameCanvas.width + markerSpacing; x += markerSpacing) {
@@ -584,7 +584,7 @@
             // Reset speed
             if (event.code === 'KeyR') {
                 event.preventDefault();
-                gameSpeed = 0.15;
+                gameSpeed = 0.8;
                 console.log(`🔄 Speed reset to ${gameSpeed}`);
             }
         });
