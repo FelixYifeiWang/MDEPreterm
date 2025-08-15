@@ -643,8 +643,10 @@
         let gameSpeed = 1.8; // default speed bumped for laptops // Faster speed
         let scrollOffset = 0;
         let animationId = null;
-        const SPEED_UNIT = 120; // px per second per 1.0 gameSpeed (was 60)
+        const SPEED_UNIT = 140; // slightly faster overall // px per second per 1.0 gameSpeed (was 60)
         let lastTimestamp = null; // for time-based updates (seconds)
+        let runAnimAccumulator = 0; // seconds
+        const RUN_ANIM_FPS = 10; // running frames per second
         
         // Screen shake system
         let screenShake = {
@@ -1855,6 +1857,13 @@ function createObstacles() {
                 if (dino.y >= dino.groundY) {
                     dino.y = dino.groundY;
                     dino.isJumping = false;
+            // Advance running animation at a fixed rate independent of FPS
+            runAnimAccumulator += dt;
+            const frameInterval = 1 / RUN_ANIM_FPS;
+            while (runAnimAccumulator >= frameInterval) {
+                runAnimAccumulator -= frameInterval;
+                dino.animationFrame = (dino.animationFrame + 1) % (dino.sprites.running?.length || 4);
+            }
                     dino.jumpVelocity = 0;
                     
                     // Reset double jump when landing
