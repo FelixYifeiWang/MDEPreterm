@@ -880,6 +880,7 @@
             victoryFlag.reached = false;
             
             // Create obstacles from monthly commit data
+            fillEmptyMonthsWithSyntheticCommits();
             createObstacles();
             
             console.log(`📈 Generated ${timelineData.length} timeline points and ${obstacles.length} obstacles`);
@@ -887,7 +888,67 @@
             console.log(`🚩 Victory flag placed at: ${lastCommitDate.toDateString()} (position: ${victoryFlag.x})`);
         }
 
-        function createObstacles() {
+        
+        // === Data Optimizer: fill months with zero commits ===
+        function fillEmptyMonthsWithSyntheticCommits() {
+            try {
+                // Build month map with day indices
+                const monthMap = {};
+                for (let i = 0; i < timelineData.length; i++) {
+                    const d = timelineData[i].date;
+                    const key = `${d.getFullYear()}-${d.getMonth()}`;
+                    if (!monthMap[key]) monthMap[key] = { dayIndices: [], totalCommits: 0 };
+                    monthMap[key].dayIndices.push(i);
+                    monthMap[key].totalCommits += timelineData[i].commits || 0;
+                }
+
+                // Build a pool of languages seen; fallback if none
+                const seenLangs = Array.from(new Set(
+                    timelineData.filter(d => (d.commits || 0) > 0 && d.language && d.language !== 'None')
+                               .map(d => d.language)
+                ));
+                const fallbackLangs = ['JavaScript','TypeScript','Python','HTML','CSS','Go','Rust','Java','C++','C#'];
+                const languagePool = seenLangs.length ? seenLangs : fallbackLangs;
+
+                // Iterate month keys between start and end
+                Object.keys(monthMap).forEach(key => {
+                    const info = monthMap[key];
+                    if (info.totalCommits > 0) return; // already has activity
+
+                    // Choose 1-3 random days in this month
+                    const nDays = Math.max(1, Math.min(3, Math.floor(Math.random()*3)+1)); // 1..3
+                    const chosen = [];
+                    for (let k = 0; k < nDays && info.dayIndices.length > 0; k++) {
+                        const idx = Math.floor(Math.random() * info.dayIndices.length);
+                        chosen.push(info.dayIndices[idx]);
+                        info.dayIndices.splice(idx, 1);
+                    }
+
+                    // Generate a total for the month, distribute across chosen days
+                    let monthTotal = Math.floor(5 + Math.random() * 20); // 5..24 commits
+                    const lang = languagePool[Math.floor(Math.random() * languagePool.length)];
+
+                    chosen.forEach((di, i) => {
+                        // Split remaining commits with some variation
+                        const remainingSlots = chosen.length - i;
+                        const give = i === chosen.length - 1
+                            ? monthTotal
+                            : Math.max(1, Math.floor(monthTotal / remainingSlots + (Math.random()*2 - 1) * 2));
+                        monthTotal -= give;
+
+                        timelineData[di].commits = (timelineData[di].commits || 0) + give;
+                        timelineData[di].language = lang;
+                    });
+
+                    // Debug log
+                    const [y, m] = key.split('-');
+                    console.log(`🧪 Data optimizer: inserted synthetic commits for ${y}-${parseInt(m,10)+1} (${chosen.length} day(s), lang=${lang}).`);
+                });
+            } catch (err) {
+                console.warn('Data optimizer error:', err);
+            }
+        }
+function createObstacles() {
             obstacles = [];
             
             // Group commits by month and create obstacles
