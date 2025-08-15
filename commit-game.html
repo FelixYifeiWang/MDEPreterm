@@ -238,6 +238,19 @@
             spritesLoaded: false
         };
 
+        // Victory system
+        let victoryFlag = {
+            x: 0,
+            reached: false
+        };
+        
+        // Victory celebration
+        let victoryEffect = {
+            active: false,
+            timer: 0,
+            fireworks: []
+        };
+
         // Obstacle system
         let obstacles = [];
 
@@ -326,6 +339,9 @@
             startDate = new Date(allCommits[0].date);
             endDate = new Date(allCommits[allCommits.length - 1].date);
             
+            // Store the actual last commit date for victory flag
+            const lastCommitDate = new Date(allCommits[allCommits.length - 1].date);
+            
             // Add padding and starting buffer
             startDate.setDate(startDate.getDate() - 60); // Extra buffer for starting area
             endDate.setDate(endDate.getDate() + 30);
@@ -374,11 +390,17 @@
                 currentDate.setDate(currentDate.getDate() + 1);
             }
             
+            // Set victory flag position at the last commit date
+            const flagDayIndex = Math.floor((lastCommitDate - startDate) / (1000 * 60 * 60 * 24));
+            victoryFlag.x = flagDayIndex * timeScale;
+            victoryFlag.reached = false;
+            
             // Create obstacles from monthly commit data
             createObstacles();
             
             console.log(`📈 Generated ${timelineData.length} timeline points and ${obstacles.length} obstacles`);
             console.log(`🎨 Languages detected: ${[...new Set(timelineData.filter(d => d.language !== 'None').map(d => d.language))].join(', ')}`);
+            console.log(`🚩 Victory flag placed at: ${lastCommitDate.toDateString()} (position: ${victoryFlag.x})`);
         }
 
         function createObstacles() {
@@ -569,6 +591,7 @@
             drawTimeAxis();
             drawLanguageDecorations();
             drawObstacles();
+            drawVictoryFlag();
             drawDino();
             
             gameCtx.restore();
@@ -580,12 +603,141 @@
             // Draw damage effect overlay (should not shake)
             drawDamageEffect();
             
+            // Draw victory effects (should not shake)
+            if (victoryEffect.active) {
+                drawVictoryEffect();
+            }
+            
             // Draw game over screen if dead
             if (dino.isDead) {
                 drawGameOver();
             }
             
             animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function drawVictoryFlag() {
+            if (victoryFlag.reached) return; // Don't draw if already reached
+            
+            const flagScreenX = victoryFlag.x - scrollOffset;
+            
+            // Only draw if flag is visible on screen
+            if (flagScreenX >= -50 && flagScreenX <= gameCanvas.width + 50) {
+                const groundY = gameCanvas.height - 100;
+                const flagPoleHeight = 80;
+                const flagHeight = 30;
+                const flagWidth = 40;
+                
+                // Flag pole
+                gameCtx.strokeStyle = '#8B4513';
+                gameCtx.lineWidth = 4;
+                gameCtx.beginPath();
+                gameCtx.moveTo(flagScreenX, groundY);
+                gameCtx.lineTo(flagScreenX, groundY - flagPoleHeight);
+                gameCtx.stroke();
+                
+                // Animated flag (waving effect)
+                const waveOffset = Math.sin(Date.now() * 0.01) * 3;
+                
+                gameCtx.fillStyle = '#ff4757';
+                gameCtx.beginPath();
+                gameCtx.moveTo(flagScreenX, groundY - flagPoleHeight);
+                gameCtx.lineTo(flagScreenX + flagWidth + waveOffset, groundY - flagPoleHeight + 5);
+                gameCtx.lineTo(flagScreenX + flagWidth + waveOffset, groundY - flagPoleHeight + flagHeight + 5);
+                gameCtx.lineTo(flagScreenX, groundY - flagPoleHeight + flagHeight);
+                gameCtx.closePath();
+                gameCtx.fill();
+                
+                // Flag border
+                gameCtx.strokeStyle = '#c44569';
+                gameCtx.lineWidth = 2;
+                gameCtx.stroke();
+                
+                // Goal text on flag
+                gameCtx.fillStyle = '#ffffff';
+                gameCtx.font = 'bold 12px monospace';
+                gameCtx.textAlign = 'center';
+                gameCtx.fillText('🏁', flagScreenX + flagWidth/2, groundY - flagPoleHeight + flagHeight/2 + 4);
+                
+                // "FINISH" text below flag
+                gameCtx.fillStyle = '#ff4757';
+                gameCtx.font = 'bold 14px monospace';
+                gameCtx.fillText('FINISH', flagScreenX, groundY + 20);
+                
+                // Glowing effect around flag
+                gameCtx.shadowColor = '#ff4757';
+                gameCtx.shadowBlur = 10;
+                gameCtx.strokeStyle = '#ff4757';
+                gameCtx.lineWidth = 1;
+                gameCtx.strokeRect(flagScreenX - 5, groundY - flagPoleHeight - 5, flagWidth + 10, flagHeight + 10);
+                gameCtx.shadowBlur = 0;
+            }
+        }
+
+        function drawVictoryEffect() {
+            // Draw fireworks
+            victoryEffect.fireworks.forEach(firework => {
+                if (firework.exploded) {
+                    firework.particles.forEach(particle => {
+                        const alpha = particle.life / 60;
+                        gameCtx.globalAlpha = alpha;
+                        gameCtx.fillStyle = particle.color;
+                        gameCtx.beginPath();
+                        gameCtx.arc(particle.x, particle.y, 3, 0, Math.PI * 2);
+                        gameCtx.fill();
+                    });
+                } else {
+                    // Draw rising firework
+                    gameCtx.fillStyle = '#ffffff';
+                    gameCtx.beginPath();
+                    gameCtx.arc(firework.x, firework.y, 2, 0, Math.PI * 2);
+                    gameCtx.fill();
+                }
+            });
+            
+            gameCtx.globalAlpha = 1.0;
+            
+            // Victory text
+            const centerX = gameCanvas.width / 2;
+            const centerY = gameCanvas.height / 2 - 100;
+            
+            // Calculate text animation
+            const textScale = 1 + Math.sin(victoryEffect.timer * 0.1) * 0.1;
+            const textAlpha = Math.min(1, victoryEffect.timer / 60);
+            
+            gameCtx.save();
+            gameCtx.globalAlpha = textAlpha;
+            gameCtx.translate(centerX, centerY);
+            gameCtx.scale(textScale, textScale);
+            
+            // Main victory text
+            gameCtx.fillStyle = '#39d353';
+            gameCtx.font = 'bold 60px Arial';
+            gameCtx.textAlign = 'center';
+            gameCtx.textBaseline = 'middle';
+            gameCtx.strokeStyle = '#ffffff';
+            gameCtx.lineWidth = 3;
+            gameCtx.strokeText('VICTORY!', 0, 0);
+            gameCtx.fillText('VICTORY!', 0, 0);
+            
+            // Subtitle
+            gameCtx.fillStyle = '#f0f6fc';
+            gameCtx.font = 'bold 24px Arial';
+            gameCtx.fillText('🎉 Coding Journey Complete! 🎉', 0, 50);
+            
+            // Stats
+            gameCtx.fillStyle = '#7d8590';
+            gameCtx.font = '18px Arial';
+            gameCtx.fillText('You survived the entire forest of your commits!', 0, 85);
+            
+            // Restart hint
+            if (victoryEffect.timer > 180) { // Show after 3 seconds
+                gameCtx.fillStyle = '#1f6feb';
+                gameCtx.font = '16px Arial';
+                gameCtx.fillText('Press R to restart your adventure', 0, 120);
+            }
+            
+            gameCtx.restore();
         }
 
         function getLanguageInfo(language) {
@@ -728,6 +880,12 @@
                 return; // Stop all other game updates
             }
             
+            // If victory is active, only update victory effects
+            if (victoryEffect.active) {
+                updateVictoryEffect();
+                return; // Stop scrolling and other updates
+            }
+            
             const rightEdgeOffset = scrollOffset + gameCanvas.width;
             const rightEdgeTimelineDays = Math.floor(rightEdgeOffset / timeScale);
             const rightEdgeDate = new Date(startDate);
@@ -737,6 +895,12 @@
             if (scrollOffset >= maxScrollOffset) {
                 scrollOffset = maxScrollOffset;
                 console.log('🏁 Reached the end of your coding timeline!');
+                return;
+            }
+            
+            // Check if dino has reached the victory flag
+            if (!victoryFlag.reached && (dino.x + scrollOffset) >= victoryFlag.x) {
+                triggerVictory();
                 return;
             }
             
@@ -765,10 +929,82 @@
             updateScreenShake();
             checkCollisions();
             
-            // Only scroll if not dead
-            if (!dino.isDead) {
+            // Only scroll if not dead and not victorious
+            if (!dino.isDead && !victoryEffect.active) {
                 scrollOffset += gameSpeed;
             }
+        }
+
+        function triggerVictory() {
+            victoryFlag.reached = true;
+            victoryEffect.active = true;
+            victoryEffect.timer = 0;
+            victoryEffect.fireworks = [];
+            
+            // Create initial fireworks
+            for (let i = 0; i < 10; i++) {
+                createFirework();
+            }
+            
+            console.log('🎉🎉 VICTORY! You completed your entire coding journey! 🎉🎉');
+        }
+
+        function createFirework() {
+            victoryEffect.fireworks.push({
+                x: Math.random() * gameCanvas.width,
+                y: Math.random() * gameCanvas.height * 0.7, // Keep in upper part
+                particles: [],
+                exploded: false,
+                timer: Math.random() * 30 + 30 // Random delay before explosion
+            });
+        }
+
+        function updateVictoryEffect() {
+            victoryEffect.timer++;
+            
+            // Add new fireworks occasionally
+            if (victoryEffect.timer % 60 === 0 && victoryEffect.fireworks.length < 15) {
+                createFirework();
+            }
+            
+            // Update fireworks
+            victoryEffect.fireworks.forEach((firework, index) => {
+                if (!firework.exploded) {
+                    firework.timer--;
+                    if (firework.timer <= 0) {
+                        // Explode!
+                        firework.exploded = true;
+                        for (let i = 0; i < 12; i++) {
+                            const angle = (i / 12) * Math.PI * 2;
+                            const speed = Math.random() * 3 + 2;
+                            firework.particles.push({
+                                x: firework.x,
+                                y: firework.y,
+                                vx: Math.cos(angle) * speed,
+                                vy: Math.sin(angle) * speed,
+                                life: 60,
+                                color: `hsl(${Math.random() * 360}, 100%, 70%)`
+                            });
+                        }
+                    }
+                } else {
+                    // Update particles
+                    firework.particles.forEach(particle => {
+                        particle.x += particle.vx;
+                        particle.y += particle.vy;
+                        particle.vy += 0.1; // gravity
+                        particle.life--;
+                    });
+                    
+                    // Remove dead particles
+                    firework.particles = firework.particles.filter(p => p.life > 0);
+                    
+                    // Remove firework if all particles are dead
+                    if (firework.particles.length === 0) {
+                        victoryEffect.fireworks.splice(index, 1);
+                    }
+                }
+            });
         }
 
         function updateDeathAnimation() {
@@ -1336,9 +1572,14 @@
                 if (event.code === 'Space') {
                     event.preventDefault();
                     
-                    // Can't jump when dead
+                    // Can't jump when dead or victorious
                     if (dino.isDead) {
                         console.log('💀 Cannot jump - dino is dead! Press R to restart.');
+                        return;
+                    }
+                    
+                    if (victoryEffect.active) {
+                        console.log('🎉 Victory achieved! Press R to restart.');
                         return;
                     }
                     
@@ -1366,7 +1607,7 @@
                 
                 if (event.code === 'ArrowUp') {
                     event.preventDefault();
-                    if (!dino.isDead) {
+                    if (!dino.isDead && !victoryEffect.active) {
                         gameSpeed = Math.min(3.0, gameSpeed + 0.2);
                         console.log(`⬆️ Speed increased to ${gameSpeed.toFixed(1)}`);
                     }
@@ -1374,7 +1615,7 @@
                 
                 if (event.code === 'ArrowDown') {
                     event.preventDefault();
-                    if (!dino.isDead) {
+                    if (!dino.isDead && !victoryEffect.active) {
                         gameSpeed = Math.max(0.2, gameSpeed - 0.2);
                         console.log(`⬇️ Speed decreased to ${gameSpeed.toFixed(1)}`);
                     }
@@ -1382,7 +1623,7 @@
                 
                 if (event.code === 'KeyR') {
                     event.preventDefault();
-                    if (dino.isDead) {
+                    if (dino.isDead || victoryEffect.active) {
                         // Restart the game
                         restartGame();
                     } else {
@@ -1420,6 +1661,12 @@
             yearChangeText = '';
             yearChangeTimer = 0;
             yearChangeAlpha = 0;
+            
+            // Reset victory state
+            victoryFlag.reached = false;
+            victoryEffect.active = false;
+            victoryEffect.timer = 0;
+            victoryEffect.fireworks = [];
             
             // Reset screen effects
             screenShake = { intensity: 0, duration: 0, x: 0, y: 0 };
