@@ -643,7 +643,8 @@
         let gameSpeed = 1.8; // default speed bumped for laptops // Faster speed
         let scrollOffset = 0;
         let animationId = null;
-        const SPEED_UNIT = 140; // slightly faster overall // px per second per 1.0 gameSpeed (was 60)
+        const SPEED_UNIT = 140; // slightly faster overall
+        const JUMP_UNIT = 80; // px per second per 1.0 jumpPower (was 60) // px per second per 1.0 gameSpeed (was 60)
         let lastTimestamp = null; // for time-based updates (seconds)
         let runAnimAccumulator = 0; // seconds
         const RUN_ANIM_FPS = 10; // running frames per second
@@ -1483,7 +1484,7 @@ function createObstacles() {
         function updateGame(dt) {
             // If dino is fallen, only update transformation
             if (dino.isFallen) {
-                updateTransformation();
+                updateTransformation(dt);
                 return; // Stop all other game updates during transformation
             }
             
@@ -1624,7 +1625,7 @@ function createObstacles() {
             });
         }
 
-        function updateTransformation() {
+        function updateTransformation(dt) {
             dino.fallenTimer++;
             
             if (dino.fallenTimer <= 300) { // 5 seconds at 60fps (wait longer before Super Saiyan)
@@ -2411,12 +2412,12 @@ function createObstacles() {
                         if (!dino.isJumping) {
                             // First jump from ground
                             dino.isJumping = true;
-                            dino.jumpVelocity = dino.jumpPower * 60; // convert to px/s
+                            dino.jumpVelocity = dino.jumpPower * JUMP_UNIT; // convert to px/s, faster jump
                             dino.jumpsRemaining--;
                             console.log('🦘 Dino first jump! (realistic physics)');
                         } else if (dino.jumpsRemaining > 0 && !dino.hasDoubleJumped) {
                             // Double jump in air - slightly weaker
-                            dino.jumpVelocity = dino.jumpPower * 0.8 * 60; // Double jump is 80% power, px/s
+                            dino.jumpVelocity = dino.jumpPower * 0.8 * JUMP_UNIT; // Double jump is 80% power, px/s
                             dino.jumpsRemaining--;
                             dino.hasDoubleJumped = true;
                             console.log('✨ Dino DOUBLE JUMP! (二段跳) - floaty physics!');
