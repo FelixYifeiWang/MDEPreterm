@@ -204,8 +204,8 @@
             height: 50,
             isJumping: false,
             jumpVelocity: 0,
-            gravity: 0.5,        // Reduced gravity for slower, more controlled jumps
-            jumpPower: -12,      // Slightly reduced jump power to compensate
+            gravity: 0.25,       // Much more realistic gravity
+            jumpPower: -8,       // Gentler jump power for realistic arc
             groundY: 0,
             
             // Double jump system
@@ -619,41 +619,6 @@
             gameCtx.strokeStyle = '#30363d';
             gameCtx.lineWidth = 1;
             gameCtx.strokeRect(progressX, progressY, progressBarWidth, progressBarHeight);
-            
-            // Double jump indicator (left side)
-            const jumpIndicatorX = 30;
-            const jumpIndicatorY = 30;
-            
-            gameCtx.fillStyle = 'rgba(33, 38, 45, 0.8)';
-            gameCtx.fillRect(jumpIndicatorX - 5, jumpIndicatorY - 5, 100, 25);
-            
-            // Jump icons
-            for (let i = 0; i < 2; i++) {
-                const iconX = jumpIndicatorX + i * 25;
-                const iconY = jumpIndicatorY + 5;
-                
-                if (i < dino.jumpsRemaining) {
-                    // Available jump - bright
-                    gameCtx.fillStyle = '#39d353';
-                } else {
-                    // Used jump - dim
-                    gameCtx.fillStyle = '#30363d';
-                }
-                
-                // Draw simple jump icon (triangle pointing up)
-                gameCtx.beginPath();
-                gameCtx.moveTo(iconX + 8, iconY);
-                gameCtx.lineTo(iconX + 4, iconY + 8);
-                gameCtx.lineTo(iconX + 12, iconY + 8);
-                gameCtx.closePath();
-                gameCtx.fill();
-            }
-            
-            // Double jump text
-            gameCtx.fillStyle = '#7d8590';
-            gameCtx.font = '10px monospace';
-            gameCtx.textAlign = 'left';
-            gameCtx.fillText('Double Jump', jumpIndicatorX + 55, jumpIndicatorY + 12);
         }
 
         function drawYearChange() {
@@ -739,13 +704,13 @@
                             dino.isJumping = true;
                             dino.jumpVelocity = dino.jumpPower;
                             dino.jumpsRemaining--;
-                            console.log('🦘 Dino first jump! (using run3.png)');
+                            console.log('🦘 Dino first jump! (realistic physics)');
                         } else if (dino.jumpsRemaining > 0 && !dino.hasDoubleJumped) {
-                            // Double jump in air
-                            dino.jumpVelocity = dino.jumpPower; // Reset velocity for double jump
+                            // Double jump in air - slightly weaker
+                            dino.jumpVelocity = dino.jumpPower * 0.8; // Double jump is 80% power
                             dino.jumpsRemaining--;
                             dino.hasDoubleJumped = true;
-                            console.log('✨ Dino DOUBLE JUMP! (二段跳)');
+                            console.log('✨ Dino DOUBLE JUMP! (二段跳) - floaty physics!');
                         }
                         
                         // Safely update score
@@ -760,7 +725,7 @@
                             console.warn('Score update error:', scoreError);
                         }
                     } else {
-                        console.log('❌ No jumps remaining!');
+                        console.log('❌ No jumps remaining - land to recharge!');
                     }
                     return; // Important: prevent further processing
                 }
