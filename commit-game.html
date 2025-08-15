@@ -491,37 +491,41 @@
             // Calculate current timeline position
             const currentTimelineX = scrollOffset;
             
-            // Draw time markers
+            // Draw time markers for every calendar month
             gameCtx.fillStyle = '#f0f6fc';
             gameCtx.font = '12px monospace';
             gameCtx.textAlign = 'center';
             
-            const markerSpacing = timeScale * 60; // Monthly markers every 2 months for better spacing
-            const startX = -(currentTimelineX % markerSpacing);
+            // Generate month markers by iterating through actual calendar months
+            let markerDate = new Date(startDate);
+            markerDate.setDate(1); // Start at first day of the month
             
-            for (let x = startX; x < gameCanvas.width + markerSpacing; x += markerSpacing) {
-                // Calculate what date this represents
-                const timelineDays = Math.floor((currentTimelineX + x) / timeScale);
-                const markerDate = new Date(startDate);
-                markerDate.setDate(markerDate.getDate() + timelineDays);
+            while (markerDate <= endDate) {
+                // Calculate x position for this month
+                const daysDiff = Math.floor((markerDate - startDate) / (1000 * 60 * 60 * 24));
+                const markerX = daysDiff * timeScale - currentTimelineX;
                 
-                if (markerDate >= startDate && markerDate <= endDate) {
+                // Only draw if marker is visible on screen
+                if (markerX >= -50 && markerX <= gameCanvas.width + 50) {
                     // Draw marker line
                     gameCtx.strokeStyle = '#7d8590';
                     gameCtx.lineWidth = 2;
                     gameCtx.beginPath();
-                    gameCtx.moveTo(x, groundY - 30);
-                    gameCtx.lineTo(x, groundY);
+                    gameCtx.moveTo(markerX, groundY - 30);
+                    gameCtx.lineTo(markerX, groundY);
                     gameCtx.stroke();
                     
-                    // Draw date label
-                    const dateLabel = markerDate.toLocaleDateString('en', { 
+                    // Draw month label
+                    const monthLabel = markerDate.toLocaleDateString('en', { 
                         month: 'short'
                     });
                     
                     gameCtx.fillStyle = '#7d8590';
-                    gameCtx.fillText(dateLabel, x, groundY - 35);
+                    gameCtx.fillText(monthLabel, markerX, groundY - 35);
                 }
+                
+                // Move to next month
+                markerDate.setMonth(markerDate.getMonth() + 1);
             }
             
             // Draw current position indicator
