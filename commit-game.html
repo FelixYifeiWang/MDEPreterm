@@ -51,14 +51,6 @@
             background-clip: text;
         }
         
-        .score-display {
-            background: rgba(33, 38, 45, 0.8);
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: 1px solid #30363d;
-            backdrop-filter: blur(10px);
-        }
-        
         .canvas-container {
             flex: 1;
             display: flex;
@@ -151,10 +143,7 @@
                 <h1>🦕 Commit Dino Game</h1>
             </div>
             
-            <div class="score-display">
-                <div>Score: <span id="gameScore">0</span></div>
-                <div style="font-size: 12px; color: #7d8590;">High: <span id="highScore">0</span></div>
-            </div>
+            <div></div> <!-- Empty space for balance -->
         </div>
         
         <!-- Game Canvas -->
@@ -325,7 +314,8 @@
             startDate = new Date(allCommits[0].date);
             endDate = new Date(allCommits[allCommits.length - 1].date);
             
-            startDate.setDate(startDate.getDate() - 30);
+            // Add padding and starting buffer
+            startDate.setDate(startDate.getDate() - 60); // Extra buffer for starting area
             endDate.setDate(endDate.getDate() + 30);
             
             totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
@@ -333,7 +323,7 @@
             const screenWidth = gameCanvas.width;
             timeScale = Math.max(4, screenWidth / totalDays * 10);
             
-            console.log(`📅 Timeline: ${totalDays} days, scale: ${timeScale} px/day`);
+            console.log(`📅 Timeline: ${totalDays} days, scale: ${timeScale} px/day (with 60-day starting buffer)`);
             
             // Process timeline data and create obstacles
             timelineData = [];
@@ -489,9 +479,6 @@
                 }
             }, 2000);
             
-            const savedHighScore = localStorage.getItem('commitDinoHighScore') || 0;
-            document.getElementById('highScore').textContent = savedHighScore;
-            
             updateLoadingText('Ready to play!');
             
             setTimeout(() => {
@@ -576,19 +563,9 @@
             // Update obstacle positions relative to scroll
             obstacles.forEach(obstacle => {
                 // Mark obstacles as passed when they're behind the dino
-                if (!obstacle.passed && obstacle.x + obstacle.width < dino.x) {
+                if (!obstacle.passed && obstacle.x + obstacle.width < dino.x + scrollOffset) {
                     obstacle.passed = true;
-                    
-                    // Bonus points for passing obstacles
-                    try {
-                        const scoreElement = document.getElementById('gameScore');
-                        if (scoreElement) {
-                            const currentScore = parseInt(scoreElement.textContent) || 0;
-                            scoreElement.textContent = currentScore + 5;
-                        }
-                    } catch (error) {
-                        console.warn('Score update error:', error);
-                    }
+                    console.log(`✅ Passed ${obstacle.commits}-commit obstacle safely!`);
                 }
             });
         }
@@ -841,7 +818,7 @@
         }
 
         function drawUI() {
-            // Progress bar
+            // Progress bar (top-right)
             const progressBarWidth = 300;
             const progressBarHeight = 8;
             const progressX = gameCanvas.width - progressBarWidth - 30;
@@ -864,7 +841,7 @@
             gameCtx.lineWidth = 1;
             gameCtx.strokeRect(progressX, progressY, progressBarWidth, progressBarHeight);
             
-            // HP Display (left side)
+            // HP Display (top-left)
             const hpX = 30;
             const hpY = 30;
             const hpBarWidth = 120;
@@ -1000,18 +977,6 @@
                             dino.jumpsRemaining--;
                             dino.hasDoubleJumped = true;
                             console.log('✨ Dino DOUBLE JUMP! (二段跳) - floaty physics!');
-                        }
-                        
-                        // Safely update score
-                        try {
-                            const scoreElement = document.getElementById('gameScore');
-                            if (scoreElement) {
-                                const currentScore = parseInt(scoreElement.textContent) || 0;
-                                const jumpBonus = dino.hasDoubleJumped ? 20 : 10; // Double jump gives more points
-                                scoreElement.textContent = currentScore + jumpBonus;
-                            }
-                        } catch (scoreError) {
-                            console.warn('Score update error:', scoreError);
                         }
                     } else {
                         console.log('❌ No jumps remaining - land to recharge!');
