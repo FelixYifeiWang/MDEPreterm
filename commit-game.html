@@ -216,8 +216,8 @@
             hasDoubleJumped: false,
             
             // HP system
-            hp: 3,
-            maxHp: 3,
+            hp: 10,
+            maxHp: 10,
             isInvincible: false,
             invincibilityTimer: 0,
             
@@ -311,6 +311,7 @@
                     allCommits.push({
                         date: new Date(commit.commit.author.date),
                         repo: repo.repo.name,
+                        language: repo.repo.language || 'Unknown',
                         message: commit.commit.message
                     });
                 });
@@ -336,7 +337,7 @@
             
             console.log(`📅 Timeline: ${totalDays} days, scale: ${timeScale} px/day (with 60-day starting buffer)`);
             
-            // Process timeline data and create obstacles
+            // Process timeline data with language information
             timelineData = [];
             let currentDate = new Date(startDate);
             
@@ -346,9 +347,25 @@
                     commit.date.toISOString().split('T')[0] === dayKey
                 );
                 
+                // Find most frequent language for this day
+                let mostFrequentLanguage = 'None';
+                if (dayCommits.length > 0) {
+                    const languageCounts = {};
+                    dayCommits.forEach(commit => {
+                        const lang = commit.language || 'Unknown';
+                        languageCounts[lang] = (languageCounts[lang] || 0) + 1;
+                    });
+                    
+                    // Find the language with highest count
+                    mostFrequentLanguage = Object.keys(languageCounts).reduce((a, b) => 
+                        languageCounts[a] > languageCounts[b] ? a : b
+                    );
+                }
+                
                 const dayData = {
                     date: new Date(currentDate),
                     commits: dayCommits.length,
+                    language: mostFrequentLanguage,
                     dayIndex: Math.floor((currentDate - startDate) / (1000 * 60 * 60 * 24)),
                     x: Math.floor((currentDate - startDate) / (1000 * 60 * 60 * 24)) * timeScale
                 };
@@ -361,6 +378,7 @@
             createObstacles();
             
             console.log(`📈 Generated ${timelineData.length} timeline points and ${obstacles.length} obstacles`);
+            console.log(`🎨 Languages detected: ${[...new Set(timelineData.filter(d => d.language !== 'None').map(d => d.language))].join(', ')}`);
         }
 
         function createObstacles() {
@@ -376,10 +394,17 @@
                         monthlyCommits[monthKey] = {
                             commits: 0,
                             x: day.x,
-                            date: day.date
+                            date: day.date,
+                            languages: {}
                         };
                     }
                     monthlyCommits[monthKey].commits += day.commits;
+                    
+                    // Track languages used this month
+                    if (day.language !== 'None') {
+                        monthlyCommits[monthKey].languages[day.language] = 
+                            (monthlyCommits[monthKey].languages[day.language] || 0) + day.commits;
+                    }
                 }
             });
             
@@ -390,12 +415,22 @@
                     const obstacleHeight = Math.min(600, month.commits * 2); // More reasonable scaling
                     const groundY = gameCanvas.height - 100;
                     
+                    // Find most frequent language for this month
+                    let dominantLanguage = 'Unknown';
+                    if (Object.keys(month.languages).length > 0) {
+                        dominantLanguage = Object.keys(month.languages).reduce((a, b) => 
+                            month.languages[a] > month.languages[b] ? a : b
+                        );
+                    }
+                    
                     obstacles.push({
                         x: month.x + (Math.random() * 200 - 100), // Add some randomness to position
                         y: groundY - obstacleHeight,
                         width: 25, // Slightly wider for better visibility
                         height: obstacleHeight,
                         commits: month.commits,
+                        language: dominantLanguage,
+                        languages: month.languages, // Store all languages for this month
                         passed: false
                     });
                 }
@@ -532,6 +567,7 @@
             
             drawGround();
             drawTimeAxis();
+            drawLanguageDecorations();
             drawObstacles();
             drawDino();
             
@@ -550,6 +586,90 @@
             }
             
             animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function getLanguageInfo(language) {
+            const languageData = {
+                'JavaScript': { icon: '🟨', color: '#f1e05a', symbol: 'JS' },
+                'TypeScript': { icon: '🔷', color: '#2b7489', symbol: 'TS' },
+                'Python': { icon: '🐍', color: '#3572A5', symbol: 'PY' },
+                'Java': { icon: '☕', color: '#b07219', symbol: 'JV' },
+                'C++': { icon: '⚡', color: '#f34b7d', symbol: 'C+' },
+                'C': { icon: '🔧', color: '#555555', symbol: 'C' },
+                'C#': { icon: '🟣', color: '#239120', symbol: 'C#' },
+                'Go': { icon: '🐹', color: '#00ADD8', symbol: 'GO' },
+                'Rust': { icon: '🦀', color: '#dea584', symbol: 'RS' },
+                'PHP': { icon: '🐘', color: '#4F5D95', symbol: 'PHP' },
+                'Ruby': { icon: '💎', color: '#701516', symbol: 'RB' },
+                'Swift': { icon: '🦉', color: '#ffac45', symbol: 'SW' },
+                'Kotlin': { icon: '🎯', color: '#7F52FF', symbol: 'KT' },
+                'HTML': { icon: '🌐', color: '#e34c26', symbol: 'HTM' },
+                'CSS': { icon: '🎨', color: '#563d7c', symbol: 'CSS' },
+                'Shell': { icon: '💻', color: '#89e051', symbol: 'SH' },
+                'Dockerfile': { icon: '🐳', color: '#384d54', symbol: 'DOC' },
+                'Vue': { icon: '🟢', color: '#4FC08D', symbol: 'VUE' },
+                'React': { icon: '⚛️', color: '#61DAFB', symbol: 'RCT' },
+                'Unknown': { icon: '❓', color: '#7d8590', symbol: '??' },
+                'None': { icon: '', color: '', symbol: '' }
+            };
+            
+            return languageData[language] || languageData['Unknown'];
+        }
+
+        function drawLanguageDecorations() {
+            const groundY = gameCanvas.height - 100;
+            
+            // Draw language-based decorations for days with commits
+            timelineData.forEach(day => {
+                if (day.commits > 0 && day.language !== 'None') {
+                    const dayScreenX = day.x - scrollOffset;
+                    
+                    // Only draw if visible on screen
+                    if (dayScreenX >= -50 && dayScreenX <= gameCanvas.width + 50) {
+                        const langInfo = getLanguageInfo(day.language);
+                        
+                        // Draw small language indicators on the ground
+                        const decorationY = groundY + 10;
+                        const numDecorations = Math.min(5, day.commits); // Max 5 decorations per day
+                        
+                        for (let i = 0; i < numDecorations; i++) {
+                            const offsetX = (i - numDecorations/2) * 8; // Spread them out
+                            const decorationX = dayScreenX + offsetX;
+                            
+                            // Small glowing dots for each commit
+                            gameCtx.fillStyle = langInfo.color;
+                            gameCtx.shadowColor = langInfo.color;
+                            gameCtx.shadowBlur = 3;
+                            gameCtx.beginPath();
+                            gameCtx.arc(decorationX, decorationY + (i % 2) * 3, 2, 0, Math.PI * 2);
+                            gameCtx.fill();
+                            gameCtx.shadowBlur = 0;
+                        }
+                        
+                        // Show language icon/symbol for days with multiple commits
+                        if (day.commits >= 3) {
+                            gameCtx.fillStyle = langInfo.color;
+                            gameCtx.font = 'bold 10px monospace';
+                            gameCtx.textAlign = 'center';
+                            
+                            // Background for symbol
+                            const symbolWidth = gameCtx.measureText(langInfo.symbol).width;
+                            gameCtx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                            gameCtx.fillRect(dayScreenX - symbolWidth/2 - 2, decorationY + 15, symbolWidth + 4, 12);
+                            
+                            // Language symbol
+                            gameCtx.fillStyle = langInfo.color;
+                            gameCtx.fillText(langInfo.symbol, dayScreenX, decorationY + 24);
+                            
+                            // Language emoji above for very active days
+                            if (day.commits >= 5 && langInfo.icon) {
+                                gameCtx.font = '16px Arial';
+                                gameCtx.fillText(langInfo.icon, dayScreenX, decorationY - 5);
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         function drawGameOver() {
@@ -671,7 +791,9 @@
                 // Mark obstacles as passed when they're behind the dino
                 if (!obstacle.passed && obstacle.x + obstacle.width < dino.x + scrollOffset) {
                     obstacle.passed = true;
-                    console.log(`✅ Passed ${obstacle.commits}-commit obstacle safely!`);
+                    const langInfo = getLanguageInfo(obstacle.language);
+                    const langDisplay = langInfo.icon ? `${obstacle.language} ${langInfo.icon}` : obstacle.language;
+                    console.log(`✅ Passed ${obstacle.commits}-commit ${langDisplay} tree safely!`);
                 }
             });
         }
@@ -709,7 +831,9 @@
                         const totalShake = baseShake + commitShake;
                         addScreenShake(totalShake, 30); // 30 frames of shake (0.5 seconds)
                         
-                        console.log(`💥💥 COLLISION! Hit ${obstacle.commits}-commit obstacle! HP: ${dino.hp}/${dino.maxHp} - SHAKE: ${totalShake.toFixed(1)}`);
+                        const langInfo = getLanguageInfo(obstacle.language);
+                        const langDisplay = langInfo.icon ? `${obstacle.language} ${langInfo.icon}` : obstacle.language;
+                        console.log(`💥💥 COLLISION! Hit ${obstacle.commits}-commit ${langDisplay} tree! HP: ${dino.hp}/${dino.maxHp} - SHAKE: ${totalShake.toFixed(1)}`);
                         
                         // Check for death
                         if (dino.hp <= 0) {
@@ -774,6 +898,7 @@
                 // Only draw obstacles that are visible on screen
                 if (obstacleScreenX > -obstacle.width && obstacleScreenX < gameCanvas.width + obstacle.width) {
                     const groundY = gameCanvas.height - 100;
+                    const langInfo = getLanguageInfo(obstacle.language);
                     
                     // Tree trunk (bottom 20% of obstacle height, minimum 30px)
                     const trunkHeight = Math.max(30, obstacle.height * 0.2);
@@ -781,11 +906,21 @@
                     const trunkX = obstacleScreenX + (obstacle.width - trunkWidth) / 2;
                     const trunkY = groundY - trunkHeight;
                     
-                    // Draw trunk with wood texture
+                    // Draw trunk with wood texture (influenced by language)
                     const trunkGradient = gameCtx.createLinearGradient(trunkX, trunkY, trunkX + trunkWidth, trunkY);
-                    trunkGradient.addColorStop(0, '#8B4513');
-                    trunkGradient.addColorStop(0.5, '#A0522D');
-                    trunkGradient.addColorStop(1, '#654321');
+                    if (langInfo.color) {
+                        // Tint trunk slightly with language color
+                        const tintedBrown1 = blendColors('#8B4513', langInfo.color, 0.15);
+                        const tintedBrown2 = blendColors('#A0522D', langInfo.color, 0.15);
+                        const tintedBrown3 = blendColors('#654321', langInfo.color, 0.15);
+                        trunkGradient.addColorStop(0, tintedBrown1);
+                        trunkGradient.addColorStop(0.5, tintedBrown2);
+                        trunkGradient.addColorStop(1, tintedBrown3);
+                    } else {
+                        trunkGradient.addColorStop(0, '#8B4513');
+                        trunkGradient.addColorStop(0.5, '#A0522D');
+                        trunkGradient.addColorStop(1, '#654321');
+                    }
                     
                     gameCtx.fillStyle = trunkGradient;
                     gameCtx.fillRect(trunkX, trunkY, trunkWidth, trunkHeight);
@@ -801,22 +936,35 @@
                     const foliageX = obstacleScreenX - (foliageWidth - obstacle.width) / 2;
                     const foliageY = Math.max(0, groundY - obstacle.height);
                     
-                    // Determine foliage color based on commit intensity
+                    // Determine foliage color based on commit intensity AND language
                     const intensity = Math.min(1, obstacle.commits / 300);
                     let foliageColor1, foliageColor2;
                     
-                    if (intensity < 0.3) {
-                        // Light green for low activity
-                        foliageColor1 = '#90EE90';
-                        foliageColor2 = '#32CD32';
-                    } else if (intensity < 0.6) {
-                        // Medium green for moderate activity
-                        foliageColor1 = '#228B22';
-                        foliageColor2 = '#006400';
+                    if (langInfo.color) {
+                        // Use language color as base and modify by intensity
+                        if (intensity < 0.3) {
+                            foliageColor1 = lightenColor(langInfo.color, 0.3);
+                            foliageColor2 = langInfo.color;
+                        } else if (intensity < 0.6) {
+                            foliageColor1 = langInfo.color;
+                            foliageColor2 = darkenColor(langInfo.color, 0.2);
+                        } else {
+                            // High intensity - darker, more stressed looking
+                            foliageColor1 = darkenColor(langInfo.color, 0.3);
+                            foliageColor2 = darkenColor(langInfo.color, 0.5);
+                        }
                     } else {
-                        // Dark/red for high activity (stressed trees!)
-                        foliageColor1 = '#8B4513';
-                        foliageColor2 = '#654321';
+                        // Fallback to green-based coloring
+                        if (intensity < 0.3) {
+                            foliageColor1 = '#90EE90';
+                            foliageColor2 = '#32CD32';
+                        } else if (intensity < 0.6) {
+                            foliageColor1 = '#228B22';
+                            foliageColor2 = '#006400';
+                        } else {
+                            foliageColor1 = '#8B4513';
+                            foliageColor2 = '#654321';
+                        }
                     }
                     
                     // Create foliage gradient
@@ -835,18 +983,19 @@
                         gameCtx.roundRect(foliageX, foliageY, foliageWidth, actualFoliageHeight, 15);
                         gameCtx.fill();
                         
-                        // Foliage border
-                        gameCtx.strokeStyle = '#2F4F2F';
+                        // Foliage border with language color tint
+                        gameCtx.strokeStyle = langInfo.color ? blendColors('#2F4F2F', langInfo.color, 0.3) : '#2F4F2F';
                         gameCtx.lineWidth = 2;
                         gameCtx.stroke();
                     }
                     
-                    // If tree extends beyond screen, show warning arrows at top
+                    // If tree extends beyond screen, show warning with language icon
                     if (obstacle.y < 0) {
                         gameCtx.fillStyle = '#ff4757';
-                        gameCtx.font = 'bold 20px monospace';
+                        gameCtx.font = 'bold 16px monospace';
                         gameCtx.textAlign = 'center';
-                        gameCtx.fillText('⬆️🌳', obstacleScreenX + obstacle.width / 2, 25);
+                        const warningText = langInfo.icon ? `⬆️${langInfo.icon}` : '⬆️🌳';
+                        gameCtx.fillText(warningText, obstacleScreenX + obstacle.width / 2, 25);
                     }
                     
                     // Draw commit count on the trunk
@@ -865,22 +1014,59 @@
                     gameCtx.fillStyle = '#FFFFFF';
                     gameCtx.fillText(obstacle.commits.toString(), trunkX + trunkWidth / 2, textY);
                     
-                    // Add intensity labels below the trunk
+                    // Add language-specific labels below the trunk
                     const labelY = groundY + 15;
                     gameCtx.font = 'bold 9px monospace';
                     
+                    // Show dominant language and intensity
+                    let intensityLabel = '';
                     if (obstacle.commits >= 300) {
+                        intensityLabel = 'ANCIENT';
                         gameCtx.fillStyle = '#ff4757';
-                        gameCtx.fillText('ANCIENT 🌳', obstacleScreenX + obstacle.width / 2, labelY);
                     } else if (obstacle.commits >= 150) {
+                        intensityLabel = 'MATURE';
                         gameCtx.fillStyle = '#ffd700';
-                        gameCtx.fillText('MATURE 🌲', obstacleScreenX + obstacle.width / 2, labelY);
                     } else if (obstacle.commits >= 75) {
+                        intensityLabel = 'GROWING';
                         gameCtx.fillStyle = '#39d353';
-                        gameCtx.fillText('GROWING 🌱', obstacleScreenX + obstacle.width / 2, labelY);
+                    }
+                    
+                    if (intensityLabel) {
+                        const labelText = langInfo.icon ? 
+                            `${intensityLabel} ${langInfo.icon}` : 
+                            `${intensityLabel} ${obstacle.language}`;
+                        gameCtx.fillText(labelText, obstacleScreenX + obstacle.width / 2, labelY);
                     }
                 }
             });
+        }
+
+        // Helper functions for color manipulation
+        function blendColors(color1, color2, ratio) {
+            const hex1 = color1.replace('#', '');
+            const hex2 = color2.replace('#', '');
+            
+            const r1 = parseInt(hex1.substr(0, 2), 16);
+            const g1 = parseInt(hex1.substr(2, 2), 16);
+            const b1 = parseInt(hex1.substr(4, 2), 16);
+            
+            const r2 = parseInt(hex2.substr(0, 2), 16);
+            const g2 = parseInt(hex2.substr(2, 2), 16);
+            const b2 = parseInt(hex2.substr(4, 2), 16);
+            
+            const r = Math.round(r1 * (1 - ratio) + r2 * ratio);
+            const g = Math.round(g1 * (1 - ratio) + g2 * ratio);
+            const b = Math.round(b1 * (1 - ratio) + b2 * ratio);
+            
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
+
+        function lightenColor(color, amount) {
+            return blendColors(color, '#FFFFFF', amount);
+        }
+
+        function darkenColor(color, amount) {
+            return blendColors(color, '#000000', amount);
         }
 
         function drawDino() {
