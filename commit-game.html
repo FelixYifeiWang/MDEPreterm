@@ -471,47 +471,42 @@
             // Calculate current timeline position
             const currentTimelineX = scrollOffset;
             
-            // Draw time markers every 3 months for maximum spacing
+            // Draw time markers for EVERY month regardless of commits
             gameCtx.fillStyle = '#f0f6fc';
             gameCtx.font = '14px monospace';
             gameCtx.textAlign = 'center';
             
-            // Generate month markers every 3 months for very clean spacing
+            // Generate month markers for every single month
             let markerDate = new Date(startDate);
             markerDate.setDate(1); // Start at first day of the month
-            let monthCount = 0;
             
             while (markerDate <= endDate) {
-                // Only show every 3rd month
-                if (monthCount % 3 === 0) {
-                    // Calculate x position for this month
-                    const daysDiff = Math.floor((markerDate - startDate) / (1000 * 60 * 60 * 24));
-                    const markerX = daysDiff * timeScale - currentTimelineX;
+                // Calculate x position for this month
+                const daysDiff = Math.floor((markerDate - startDate) / (1000 * 60 * 60 * 24));
+                const markerX = daysDiff * timeScale - currentTimelineX;
+                
+                // Only draw if marker is visible on screen
+                if (markerX >= -50 && markerX <= gameCanvas.width + 50) {
+                    // Draw month label IN the gray ground area
+                    const monthLabel = markerDate.toLocaleDateString('en', { 
+                        month: 'short'
+                    });
                     
-                    // Only draw if marker is visible on screen
-                    if (markerX >= -50 && markerX <= gameCanvas.width + 50) {
-                        // Draw month label IN the gray ground area
-                        const monthLabel = markerDate.toLocaleDateString('en', { 
-                            month: 'short'
-                        });
-                        
-                        gameCtx.fillStyle = '#f0f6fc';
-                        gameCtx.font = 'bold 16px monospace';
-                        gameCtx.fillText(monthLabel, markerX, groundY + 30);
-                        
-                        // Optional: Draw a subtle vertical line from surface into ground
-                        gameCtx.strokeStyle = '#30363d';
-                        gameCtx.lineWidth = 1;
-                        gameCtx.beginPath();
-                        gameCtx.moveTo(markerX, groundY);
-                        gameCtx.lineTo(markerX, groundY + 50);
-                        gameCtx.stroke();
-                    }
+                    gameCtx.fillStyle = '#f0f6fc';
+                    gameCtx.font = 'bold 16px monospace';
+                    gameCtx.fillText(monthLabel, markerX, groundY + 30);
+                    
+                    // Optional: Draw a subtle vertical line from surface into ground
+                    gameCtx.strokeStyle = '#30363d';
+                    gameCtx.lineWidth = 1;
+                    gameCtx.beginPath();
+                    gameCtx.moveTo(markerX, groundY);
+                    gameCtx.lineTo(markerX, groundY + 50);
+                    gameCtx.stroke();
                 }
                 
                 // Move to next month
                 markerDate.setMonth(markerDate.getMonth() + 1);
-                monthCount++;
             }
             
             // Draw current position indicator
