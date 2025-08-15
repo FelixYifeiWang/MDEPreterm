@@ -430,11 +430,14 @@
                 }
             });
             
-            // Create obstacles from monthly data
-            // Scaling: 100 commits = ~200px (within one jump), 500+ commits can be extreme
+            // Create obstacles from monthly data - NOW FOR ALL COMMITS!
             Object.values(monthlyCommits).forEach(month => {
-                if (month.commits > 10) { // Lower threshold for more obstacles
-                    const obstacleHeight = Math.min(600, month.commits * 2); // More reasonable scaling
+                if (month.commits > 0) { // Changed from > 10 to > 0 - ALL commits create trees!
+                    // New improved scaling: minimum 15px height, then scale up
+                    const baseHeight = 15; // Minimum tree height so even 1 commit is visible
+                    const scaledHeight = month.commits * 1.5; // Slightly reduced scaling factor
+                    const obstacleHeight = Math.min(500, baseHeight + scaledHeight); // Max height reduced to 500px
+                    
                     const groundY = gameCanvas.height - 100;
                     
                     // Find most frequent language for this month
@@ -448,7 +451,7 @@
                     obstacles.push({
                         x: month.x + (Math.random() * 200 - 100), // Add some randomness to position
                         y: groundY - obstacleHeight,
-                        width: 25, // Slightly wider for better visibility
+                        width: Math.max(15, Math.min(35, 15 + month.commits * 0.5)), // Width scales with commits too, min 15px
                         height: obstacleHeight,
                         commits: month.commits,
                         language: dominantLanguage,
@@ -458,7 +461,8 @@
                 }
             });
             
-            console.log(`🚧 Created ${obstacles.length} obstacles (100 commits ≈ one jump height)`);
+            console.log(`🌳 Created ${obstacles.length} trees from ALL commits! (Even tiny 1-commit saplings are now visible!)`);
+            console.log(`📏 Tree heights: ${baseHeight}px minimum + (commits × 1.5)px, max 500px`);
         }
 
         function addScreenShake(intensity, duration) {
@@ -1029,7 +1033,15 @@
                     obstacle.passed = true;
                     const langInfo = getLanguageInfo(obstacle.language);
                     const langDisplay = langInfo.icon ? `${obstacle.language} ${langInfo.icon}` : obstacle.language;
-                    console.log(`✅ Passed ${obstacle.commits}-commit ${langDisplay} tree safely!`);
+                    
+                    // Special messages for tiny trees
+                    if (obstacle.commits <= 3) {
+                        console.log(`🌱 Passed tiny ${obstacle.commits}-commit ${langDisplay} sapling!`);
+                    } else if (obstacle.commits <= 10) {
+                        console.log(`🌿 Passed small ${obstacle.commits}-commit ${langDisplay} tree!`);
+                    } else {
+                        console.log(`✅ Passed ${obstacle.commits}-commit ${langDisplay} tree safely!`);
+                    }
                 }
             });
         }
@@ -1061,15 +1073,23 @@
                         dino.isInvincible = true;
                         dino.invincibilityTimer = 90; // 1.5 seconds of invincibility at 60fps
                         
-                        // Add screen shake - make it more noticeable
-                        const baseShake = 8; // Base shake intensity
-                        const commitShake = Math.min(12, obstacle.commits / 20); // Additional shake based on commits
+                        // Add screen shake - adjust for smaller trees
+                        const baseShake = 6; // Reduced base shake for tiny trees
+                        const commitShake = Math.min(10, obstacle.commits / 15); // Scaling adjusted
                         const totalShake = baseShake + commitShake;
-                        addScreenShake(totalShake, 30); // 30 frames of shake (0.5 seconds)
+                        addScreenShake(totalShake, 25); // Slightly shorter shake duration
                         
                         const langInfo = getLanguageInfo(obstacle.language);
                         const langDisplay = langInfo.icon ? `${obstacle.language} ${langInfo.icon}` : obstacle.language;
-                        console.log(`💥💥 COLLISION! Hit ${obstacle.commits}-commit ${langDisplay} tree! HP: ${dino.hp}/${dino.maxHp} - SHAKE: ${totalShake.toFixed(1)}`);
+                        
+                        // Different messages for different tree sizes
+                        if (obstacle.commits <= 3) {
+                            console.log(`🌱💥 OUCH! Tripped over ${obstacle.commits}-commit ${langDisplay} sapling! HP: ${dino.hp}/${dino.maxHp}`);
+                        } else if (obstacle.commits <= 10) {
+                            console.log(`🌿💥 BONK! Hit ${obstacle.commits}-commit ${langDisplay} small tree! HP: ${dino.hp}/${dino.maxHp}`);
+                        } else {
+                            console.log(`🌳💥 CRASH! Hit ${obstacle.commits}-commit ${langDisplay} tree! HP: ${dino.hp}/${dino.maxHp}`);
+                        }
                         
                         // Check for death
                         if (dino.hp <= 0) {
@@ -1136,9 +1156,9 @@
                     const groundY = gameCanvas.height - 100;
                     const langInfo = getLanguageInfo(obstacle.language);
                     
-                    // Tree trunk (bottom 20% of obstacle height, minimum 30px)
-                    const trunkHeight = Math.max(30, obstacle.height * 0.2);
-                    const trunkWidth = obstacle.width * 0.6; // Thinner trunk
+                    // Tree trunk (bottom 25% of obstacle height, minimum 10px for tiny trees)
+                    const trunkHeight = Math.max(10, obstacle.height * 0.25);
+                    const trunkWidth = Math.max(8, obstacle.width * 0.6); // Minimum trunk width for tiny trees
                     const trunkX = obstacleScreenX + (obstacle.width - trunkWidth) / 2;
                     const trunkY = groundY - trunkHeight;
                     
@@ -1163,25 +1183,25 @@
                     
                     // Trunk border
                     gameCtx.strokeStyle = '#5D4E37';
-                    gameCtx.lineWidth = 2;
+                    gameCtx.lineWidth = Math.max(1, trunkWidth / 8); // Thinner border for tiny trees
                     gameCtx.strokeRect(trunkX, trunkY, trunkWidth, trunkHeight);
                     
-                    // Tree foliage (top 80% of obstacle height)
+                    // Tree foliage (top 75% of obstacle height)
                     const foliageHeight = obstacle.height - trunkHeight;
-                    const foliageWidth = obstacle.width * 1.2; // Wider than trunk
-                    const foliageX = obstacleScreenX - (foliageWidth - obstacle.width) / 2;
+                    const foliageWidth = Math.max(obstacle.width, obstacle.width * 1.1); // Less expansion for tiny trees
+                    const foliageX = obstacleScreenX + (obstacle.width - foliageWidth) / 2;
                     const foliageY = Math.max(0, groundY - obstacle.height);
                     
                     // Determine foliage color based on commit intensity AND language
-                    const intensity = Math.min(1, obstacle.commits / 300);
+                    const intensity = Math.min(1, obstacle.commits / 200); // Adjusted for new scaling
                     let foliageColor1, foliageColor2;
                     
                     if (langInfo.color) {
                         // Use language color as base and modify by intensity
-                        if (intensity < 0.3) {
-                            foliageColor1 = lightenColor(langInfo.color, 0.3);
-                            foliageColor2 = langInfo.color;
-                        } else if (intensity < 0.6) {
+                        if (intensity < 0.2) {
+                            foliageColor1 = lightenColor(langInfo.color, 0.4);
+                            foliageColor2 = lightenColor(langInfo.color, 0.1);
+                        } else if (intensity < 0.5) {
                             foliageColor1 = langInfo.color;
                             foliageColor2 = darkenColor(langInfo.color, 0.2);
                         } else {
@@ -1191,10 +1211,10 @@
                         }
                     } else {
                         // Fallback to green-based coloring
-                        if (intensity < 0.3) {
+                        if (intensity < 0.2) {
                             foliageColor1 = '#90EE90';
                             foliageColor2 = '#32CD32';
-                        } else if (intensity < 0.6) {
+                        } else if (intensity < 0.5) {
                             foliageColor1 = '#228B22';
                             foliageColor2 = '#006400';
                         } else {
@@ -1216,12 +1236,13 @@
                     if (actualFoliageHeight > 0) {
                         gameCtx.fillStyle = foliageGradient;
                         gameCtx.beginPath();
-                        gameCtx.roundRect(foliageX, foliageY, foliageWidth, actualFoliageHeight, 15);
+                        const borderRadius = Math.min(8, Math.max(3, foliageWidth / 4)); // Smaller radius for tiny trees
+                        gameCtx.roundRect(foliageX, foliageY, foliageWidth, actualFoliageHeight, borderRadius);
                         gameCtx.fill();
                         
                         // Foliage border with language color tint
                         gameCtx.strokeStyle = langInfo.color ? blendColors('#2F4F2F', langInfo.color, 0.3) : '#2F4F2F';
-                        gameCtx.lineWidth = 2;
+                        gameCtx.lineWidth = Math.max(1, foliageWidth / 10); // Thinner border for tiny trees
                         gameCtx.stroke();
                     }
                     
@@ -1234,45 +1255,57 @@
                         gameCtx.fillText(warningText, obstacleScreenX + obstacle.width / 2, 25);
                     }
                     
-                    // Draw commit count on the trunk
-                    const textY = trunkY + trunkHeight / 2 + 5;
+                    // Draw commit count on the trunk (scaled for tree size)
+                    const fontSize = Math.max(8, Math.min(12, trunkWidth * 0.8)); // Scale font with trunk size
+                    const textY = trunkY + trunkHeight / 2 + fontSize / 3;
                     
                     gameCtx.fillStyle = '#FFFFFF';
-                    gameCtx.font = 'bold 12px monospace';
+                    gameCtx.font = `bold ${fontSize}px monospace`;
                     gameCtx.textAlign = 'center';
                     
                     // Background for text readability
                     const textWidth = gameCtx.measureText(obstacle.commits.toString()).width;
+                    const bgPadding = Math.max(2, fontSize / 4);
                     gameCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                    gameCtx.fillRect(trunkX + trunkWidth/2 - textWidth/2 - 3, textY - 10, textWidth + 6, 14);
+                    gameCtx.fillRect(
+                        trunkX + trunkWidth/2 - textWidth/2 - bgPadding, 
+                        textY - fontSize + 2, 
+                        textWidth + bgPadding * 2, 
+                        fontSize + 2
+                    );
                     
                     // Commit count text
                     gameCtx.fillStyle = '#FFFFFF';
                     gameCtx.fillText(obstacle.commits.toString(), trunkX + trunkWidth / 2, textY);
                     
-                    // Add language-specific labels below the trunk
+                    // Add tree size labels below the trunk
                     const labelY = groundY + 15;
-                    gameCtx.font = 'bold 9px monospace';
+                    const labelFontSize = Math.max(7, Math.min(10, obstacle.width * 0.4)); // Scale label with tree
+                    gameCtx.font = `bold ${labelFontSize}px monospace`;
                     
-                    // Show dominant language and intensity
-                    let intensityLabel = '';
-                    if (obstacle.commits >= 300) {
-                        intensityLabel = 'ANCIENT';
-                        gameCtx.fillStyle = '#ff4757';
-                    } else if (obstacle.commits >= 150) {
-                        intensityLabel = 'MATURE';
-                        gameCtx.fillStyle = '#ffd700';
-                    } else if (obstacle.commits >= 75) {
-                        intensityLabel = 'GROWING';
-                        gameCtx.fillStyle = '#39d353';
+                    // Show size category and language
+                    let sizeLabel = '';
+                    if (obstacle.commits <= 3) {
+                        sizeLabel = 'SAPLING';
+                        gameCtx.fillStyle = '#90EE90'; // Light green for saplings
+                    } else if (obstacle.commits <= 10) {
+                        sizeLabel = 'YOUNG';
+                        gameCtx.fillStyle = '#32CD32'; // Medium green
+                    } else if (obstacle.commits >= 200) {
+                        sizeLabel = 'ANCIENT';
+                        gameCtx.fillStyle = '#ff4757'; // Red for ancient
+                    } else if (obstacle.commits >= 100) {
+                        sizeLabel = 'MATURE';
+                        gameCtx.fillStyle = '#ffd700'; // Gold for mature
+                    } else {
+                        sizeLabel = 'GROWING';
+                        gameCtx.fillStyle = '#39d353'; // Green for growing
                     }
                     
-                    if (intensityLabel) {
-                        const labelText = langInfo.icon ? 
-                            `${intensityLabel} ${langInfo.icon}` : 
-                            `${intensityLabel} ${obstacle.language}`;
-                        gameCtx.fillText(labelText, obstacleScreenX + obstacle.width / 2, labelY);
-                    }
+                    const labelText = langInfo.icon ? 
+                        `${sizeLabel} ${langInfo.icon}` : 
+                        `${sizeLabel} ${obstacle.language}`;
+                    gameCtx.fillText(labelText, obstacleScreenX + obstacle.width / 2, labelY);
                 }
             });
         }
