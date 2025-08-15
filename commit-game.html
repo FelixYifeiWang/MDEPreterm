@@ -208,9 +208,9 @@
             jumpPower: -15,
             groundY: 0,
             
-            // Animation
+            // Animation (slower speeds)
             animationFrame: 0,
-            runAnimationSpeed: 8,  // frames between run animation changes
+            runAnimationSpeed: 15,  // Slower running animation (was 8)
             jumpFrameIndex: 0,
             
             // Sprites
@@ -522,26 +522,33 @@
                 dino.y += dino.jumpVelocity;
                 dino.jumpVelocity += dino.gravity;
                 
-                // Update jump frame based on jump progress
+                // Update jump frame based on jump progress - with bounds checking
                 const jumpProgress = Math.abs(dino.jumpVelocity) / Math.abs(dino.jumpPower);
+                
                 if (dino.jumpVelocity < 0) {
                     // Rising - frames 0-1
-                    dino.jumpFrameIndex = Math.min(1, Math.floor(jumpProgress * 2));
+                    dino.jumpFrameIndex = Math.min(1, Math.max(0, Math.floor(jumpProgress * 2)));
                 } else {
                     // Falling - frames 2-3
-                    dino.jumpFrameIndex = Math.min(3, 2 + Math.floor(jumpProgress * 2));
+                    dino.jumpFrameIndex = Math.min(3, Math.max(2, 2 + Math.floor(jumpProgress * 2)));
                 }
                 
+                // Ensure jump frame is within valid range
+                dino.jumpFrameIndex = Math.min(3, Math.max(0, dino.jumpFrameIndex));
+                
+                // Land back on ground
                 if (dino.y >= dino.groundY) {
                     dino.y = dino.groundY;
                     dino.isJumping = false;
                     dino.jumpVelocity = 0;
                     dino.jumpFrameIndex = 0;
+                    console.log('🏃 Dino landed');
                 }
             } else {
                 dino.y = dino.groundY;
             }
             
+            // Update running animation
             dino.animationFrame++;
         }
 
@@ -715,35 +722,50 @@
         document.addEventListener('keydown', function(event) {
             if (!isGameReady) return;
             
-            if (event.code === 'Space') {
-                event.preventDefault();
-                
-                if (!dino.isJumping) {
-                    dino.isJumping = true;
-                    dino.jumpVelocity = dino.jumpPower;
-                    console.log('🦘 Dino jumps!');
+            try {
+                if (event.code === 'Space') {
+                    event.preventDefault();
                     
-                    const currentScore = parseInt(document.getElementById('gameScore').textContent);
-                    document.getElementById('gameScore').textContent = currentScore + 10;
+                    if (!dino.isJumping) {
+                        dino.isJumping = true;
+                        dino.jumpVelocity = dino.jumpPower;
+                        dino.jumpFrameIndex = 0; // Reset jump animation
+                        console.log('🦘 Dino jumps!');
+                        
+                        // Safely update score
+                        try {
+                            const scoreElement = document.getElementById('gameScore');
+                            if (scoreElement) {
+                                const currentScore = parseInt(scoreElement.textContent) || 0;
+                                scoreElement.textContent = currentScore + 10;
+                            }
+                        } catch (scoreError) {
+                            console.warn('Score update error:', scoreError);
+                        }
+                    }
+                    return; // Important: prevent further processing
                 }
-            }
-            
-            if (event.code === 'ArrowUp') {
-                event.preventDefault();
-                gameSpeed = Math.min(3.0, gameSpeed + 0.2);
-                console.log(`⬆️ Speed increased to ${gameSpeed.toFixed(1)}`);
-            }
-            
-            if (event.code === 'ArrowDown') {
-                event.preventDefault();
-                gameSpeed = Math.max(0.2, gameSpeed - 0.2);
-                console.log(`⬇️ Speed decreased to ${gameSpeed.toFixed(1)}`);
-            }
-            
-            if (event.code === 'KeyR') {
-                event.preventDefault();
-                gameSpeed = 1.2;
-                console.log(`🔄 Speed reset to ${gameSpeed}`);
+                
+                if (event.code === 'ArrowUp') {
+                    event.preventDefault();
+                    gameSpeed = Math.min(3.0, gameSpeed + 0.2);
+                    console.log(`⬆️ Speed increased to ${gameSpeed.toFixed(1)}`);
+                }
+                
+                if (event.code === 'ArrowDown') {
+                    event.preventDefault();
+                    gameSpeed = Math.max(0.2, gameSpeed - 0.2);
+                    console.log(`⬇️ Speed decreased to ${gameSpeed.toFixed(1)}`);
+                }
+                
+                if (event.code === 'KeyR') {
+                    event.preventDefault();
+                    gameSpeed = 1.2;
+                    console.log(`🔄 Speed reset to ${gameSpeed}`);
+                }
+            } catch (error) {
+                console.error('Keyboard event error:', error);
+                // Don't let keyboard errors crash the game
             }
         });
 
