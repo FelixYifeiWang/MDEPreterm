@@ -319,38 +319,6 @@
             box-shadow: 0 8px 25px rgba(255, 107, 107, 0.5);
         }
         
-        /* Game Page Styles */
-        .game-page {
-            width: 100%;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
-            padding: 30px;
-            animation: fadeIn 0.5s ease;
-        }
-        
-        .game-header {
-            max-width: 800px;
-            margin: 0 auto 40px;
-        }
-        
-        .back-btn {
-            background: linear-gradient(135deg, #21262d 0%, #2d333b 100%);
-            color: #f0f6fc;
-            border: 1px solid #30363d;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .back-btn:hover {
-            background: linear-gradient(135deg, #30363d 0%, #3d444d 100%);
-            border-color: #1f6feb;
-            transform: translateY(-2px);
-        }
-        
         .viz-container {
             background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
             border: 1px solid #30363d;
@@ -827,25 +795,6 @@
             <div id="commitDataContainer"></div>
             
             <button class="logout-btn" onclick="logout()">Sign out</button>
-        </div>
-        
-        <!-- COMMIT GAME PAGE -->
-        <div id="gamePage" class="game-page" style="display: none;">
-            <div class="game-header">
-                <h1 style="text-align: center; color: #f0f6fc; margin-bottom: 20px;">
-                    🦕 Commit Dino Game
-                </h1>
-                <p style="text-align: center; color: #7d8590; margin-bottom: 30px;">
-                    Jump over your commit history! Higher obstacles = more productive days
-                </p>
-                <button class="back-btn" onclick="backToDashboard()">← Back to Dashboard</button>
-            </div>
-            
-            <div style="text-align: center; padding: 100px 20px; color: #7d8590;">
-                <div style="font-size: 48px; margin-bottom: 20px;">🚧</div>
-                <div style="font-size: 24px; margin-bottom: 12px;">Game Coming Soon!</div>
-                <div style="font-size: 16px;">We're building an epic commit history game for you...</div>
-            </div>
         </div>
     </div>
 
@@ -1614,19 +1563,29 @@
                 return;
             }
             
-            // Hide dashboard and show game page
-            dashboard.style.display = 'none';
-            document.getElementById('gamePage').style.display = 'block';
+            // Prepare game data
+            const gameData = {
+                commitData: allCommitData,
+                totalCommits: totalCommits,
+                userInfo: {
+                    username: currentUser.login,
+                    name: currentUser.name || currentUser.login,
+                    joinDate: currentUser.created_at
+                },
+                stats: {
+                    totalRepos: analyzedRepos,
+                    yearsActive: document.getElementById('yearsActive').textContent
+                },
+                timestamp: Date.now()
+            };
             
-            console.log(`🎮 Game loaded with ${totalCommits} commits from ${allCommitData.length} repositories`);
-        }
-
-        function backToDashboard() {
-            console.log('📊 Returning to dashboard...');
+            // Save to sessionStorage for the game page
+            sessionStorage.setItem('githubCommitGameData', JSON.stringify(gameData));
             
-            // Hide game page and show dashboard
-            document.getElementById('gamePage').style.display = 'none';
-            dashboard.style.display = 'block';
+            console.log(`🎮 Saved game data: ${totalCommits} commits from ${allCommitData.length} repositories`);
+            
+            // Open game in new tab/window
+            window.open('commit-game.html', '_blank');
         }
 
         function logout() {
@@ -1645,9 +1604,10 @@
                 document.getElementById(id).textContent = '0';
             });
             
-            // Hide all pages and show login
+            // Clear any game data
+            sessionStorage.removeItem('githubCommitGameData');
+            
             dashboard.style.display = 'none';
-            document.getElementById('gamePage').style.display = 'none';
             loginForm.style.display = 'block';
             
             updateStatus('Ready to analyze commits!', '');

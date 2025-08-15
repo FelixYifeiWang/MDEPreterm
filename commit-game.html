@@ -1,0 +1,370 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦕 Commit Dino Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #0d1117 0%, #21262d 100%);
+            color: #f0f6fc;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .game-header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .back-btn {
+            background: linear-gradient(135deg, #21262d 0%, #2d333b 100%);
+            color: #f0f6fc;
+            border: 1px solid #30363d;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .back-btn:hover {
+            background: linear-gradient(135deg, #30363d 0%, #3d444d 100%);
+            border-color: #1f6feb;
+            transform: translateY(-2px);
+        }
+        
+        .game-info {
+            text-align: center;
+        }
+        
+        .game-info h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 50%, #48cae4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .game-info p {
+            color: #7d8590;
+            font-size: 14px;
+        }
+        
+        .score-display {
+            background: rgba(33, 38, 45, 0.8);
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            backdrop-filter: blur(10px);
+        }
+        
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 80px 20px 20px;
+        }
+        
+        #gameCanvas {
+            background: linear-gradient(180deg, #0969da 0%, #0550ae 50%, #1f883d 100%);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 2px solid #30363d;
+        }
+        
+        .loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(13, 17, 23, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        
+        .loading-screen.hidden {
+            display: none;
+        }
+        
+        .spinner {
+            border: 3px solid #30363d;
+            border-top: 3px solid #1f6feb;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-screen {
+            text-align: center;
+            padding: 40px;
+            color: #da3633;
+        }
+        
+        .error-screen h2 {
+            margin-bottom: 16px;
+            font-size: 24px;
+        }
+        
+        .error-screen p {
+            margin-bottom: 20px;
+            color: #7d8590;
+        }
+        
+        .retry-btn {
+            background: linear-gradient(135deg, #1f883d 0%, #26a641 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .retry-btn:hover {
+            background: linear-gradient(135deg, #26a641 0%, #2ea043 100%);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Game Header -->
+        <div class="game-header">
+            <a href="javascript:history.back()" class="back-btn">← Back to Dashboard</a>
+            
+            <div class="game-info">
+                <h1>🦕 Commit Dino Game</h1>
+                <p id="playerInfo">Loading your coding journey...</p>
+            </div>
+            
+            <div class="score-display">
+                <div>Score: <span id="gameScore">0</span></div>
+                <div style="font-size: 12px; color: #7d8590;">High: <span id="highScore">0</span></div>
+            </div>
+        </div>
+        
+        <!-- Game Canvas -->
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="1200" height="400"></canvas>
+        </div>
+        
+        <!-- Loading Screen -->
+        <div id="loadingScreen" class="loading-screen">
+            <div class="spinner"></div>
+            <h2>Preparing Your Game...</h2>
+            <p id="loadingText">Loading commit data...</p>
+        </div>
+    </div>
+
+    <script>
+        // Global game variables
+        let gameData = null;
+        let gameCanvas = null;
+        let gameCtx = null;
+        let isGameReady = false;
+
+        // Initialize the game
+        window.addEventListener('load', function() {
+            console.log('🎮 Commit Dino Game starting...');
+            
+            gameCanvas = document.getElementById('gameCanvas');
+            gameCtx = gameCanvas.getContext('2d');
+            
+            loadGameData();
+        });
+
+        function loadGameData() {
+            updateLoadingText('Loading commit data...');
+            
+            // Get data from sessionStorage
+            const storedData = sessionStorage.getItem('githubCommitGameData');
+            
+            if (!storedData) {
+                showError(
+                    'No Game Data Found',
+                    'Could not find your commit data. Please go back to the dashboard and complete the commit analysis first.',
+                    'Go Back'
+                );
+                return;
+            }
+            
+            try {
+                gameData = JSON.parse(storedData);
+                console.log('📊 Game data loaded:', gameData);
+                
+                // Validate data
+                if (!gameData.commitData || gameData.commitData.length === 0) {
+                    throw new Error('No commit data available');
+                }
+                
+                updateLoadingText('Processing commit history...');
+                setTimeout(() => {
+                    initializeGame();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('❌ Error loading game data:', error);
+                showError(
+                    'Data Loading Error',
+                    'There was an error processing your commit data. Please try again.',
+                    'Retry'
+                );
+            }
+        }
+
+        function initializeGame() {
+            updateLoadingText('Setting up game world...');
+            
+            // Update player info
+            document.getElementById('playerInfo').textContent = 
+                `${gameData.userInfo.name} • ${gameData.totalCommits} commits to survive!`;
+            
+            // Load high score
+            const savedHighScore = localStorage.getItem('commitDinoHighScore') || 0;
+            document.getElementById('highScore').textContent = savedHighScore;
+            
+            updateLoadingText('Ready to play!');
+            
+            setTimeout(() => {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                isGameReady = true;
+                startGame();
+            }, 500);
+        }
+
+        function startGame() {
+            console.log('🚀 Game started!');
+            
+            // Clear canvas
+            gameCtx.fillStyle = '#0d1117';
+            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            
+            // Draw placeholder game content
+            gameCtx.fillStyle = '#f0f6fc';
+            gameCtx.font = '24px Arial';
+            gameCtx.textAlign = 'center';
+            gameCtx.fillText('🚧 Game Engine Coming Soon!', gameCanvas.width / 2, gameCanvas.height / 2 - 40);
+            
+            gameCtx.font = '16px Arial';
+            gameCtx.fillStyle = '#7d8590';
+            gameCtx.fillText(`Ready to process ${gameData.totalCommits} commits`, gameCanvas.width / 2, gameCanvas.height / 2);
+            gameCtx.fillText(`from ${gameData.commitData.length} repositories`, gameCanvas.width / 2, gameCanvas.height / 2 + 25);
+            
+            gameCtx.fillStyle = '#1f6feb';
+            gameCtx.fillText('Press SPACE to jump when ready!', gameCanvas.width / 2, gameCanvas.height / 2 + 60);
+            
+            // Add some visual elements
+            drawPlaceholderElements();
+        }
+
+        function drawPlaceholderElements() {
+            // Draw ground line
+            gameCtx.strokeStyle = '#30363d';
+            gameCtx.lineWidth = 2;
+            gameCtx.beginPath();
+            gameCtx.moveTo(0, gameCanvas.height - 80);
+            gameCtx.lineTo(gameCanvas.width, gameCanvas.height - 80);
+            gameCtx.stroke();
+            
+            // Draw placeholder dino
+            gameCtx.fillStyle = '#39d353';
+            gameCtx.fillRect(100, gameCanvas.height - 120, 30, 40);
+            
+            // Draw some placeholder obstacles
+            for (let i = 0; i < 3; i++) {
+                const x = 400 + (i * 200);
+                const height = 20 + (i * 15);
+                gameCtx.fillStyle = '#ff6b6b';
+                gameCtx.fillRect(x, gameCanvas.height - 80 - height, 20, height);
+            }
+        }
+
+        function updateLoadingText(text) {
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        function showError(title, message, buttonText) {
+            const loadingScreen = document.getElementById('loadingScreen');
+            loadingScreen.innerHTML = `
+                <div class="error-screen">
+                    <h2>${title}</h2>
+                    <p>${message}</p>
+                    <button class="retry-btn" onclick="handleErrorAction()">${buttonText}</button>
+                </div>
+            `;
+        }
+
+        function handleErrorAction() {
+            // Go back to previous page
+            history.back();
+        }
+
+        // Handle keyboard input
+        document.addEventListener('keydown', function(event) {
+            if (!isGameReady) return;
+            
+            if (event.code === 'Space') {
+                event.preventDefault();
+                console.log('🦘 JUMP! (Game mechanics coming next)');
+                
+                // Update score as placeholder
+                const currentScore = parseInt(document.getElementById('gameScore').textContent);
+                document.getElementById('gameScore').textContent = currentScore + 10;
+            }
+        });
+
+        // Prevent context menu on canvas
+        gameCanvas.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && isGameReady) {
+                console.log('⏸️ Game paused (tab hidden)');
+            } else if (isGameReady) {
+                console.log('▶️ Game resumed');
+            }
+        });
+    </script>
+</body>
+</html>
