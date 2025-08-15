@@ -544,6 +544,100 @@
                 console.warn('🔇 Error playing death sound:', error);
             }
         }
+
+        // Play fallen sound (less dramatic than death)
+        function playFallenSound() {
+            if (!soundEnabled || !audioContext) return;
+            
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = 'triangle';
+                
+                const now = audioContext.currentTime;
+                
+                // Descending but shorter than death
+                oscillator.frequency.setValueAtTime(330, now);
+                oscillator.frequency.exponentialRampToValueAtTime(165, now + 0.5);
+                
+                // Volume envelope
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(0.2, now + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                
+                oscillator.start(now);
+                oscillator.stop(now + 0.5);
+            } catch (error) {
+                console.warn('🔇 Error playing fallen sound:', error);
+            }
+        }
+
+        // Play transformation sound
+        function playTransformationSound() {
+            if (!soundEnabled || !audioContext) return;
+            
+            try {
+                // Epic ascending power-up sound
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = 'sawtooth';
+                
+                const now = audioContext.currentTime;
+                
+                // Dramatic ascending frequency
+                oscillator.frequency.setValueAtTime(110, now);
+                oscillator.frequency.exponentialRampToValueAtTime(880, now + 1.5);
+                
+                // Power-up volume envelope
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(0.4, now + 0.2);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+                
+                oscillator.start(now);
+                oscillator.stop(now + 1.5);
+            } catch (error) {
+                console.warn('🔇 Error playing transformation sound:', error);
+            }
+        }
+
+        // Play tree fall sound
+        function playTreeFallSound() {
+            if (!soundEnabled || !audioContext) return;
+            
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = 'square';
+                
+                const now = audioContext.currentTime;
+                
+                // Tree falling "timber" sound
+                oscillator.frequency.setValueAtTime(200, now);
+                oscillator.frequency.exponentialRampToValueAtTime(50, now + 0.8);
+                
+                // Volume envelope
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(0.25, now + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+                
+                oscillator.start(now);
+                oscillator.stop(now + 0.8);
+            } catch (error) {
+                console.warn('🔇 Error playing tree fall sound:', error);
+            }
+        }
         
         // Game mechanics
         let gameSpeed = 1.2; // Faster speed
@@ -603,10 +697,12 @@
             isInvincible: false,
             invincibilityTimer: 0,
             
-            // Death system
-            isDead: false,
-            deathTimer: 0,
-            deathRotation: 0,
+            // Transformation system (replaces death)
+            isFallen: false,
+            fallenTimer: 0,
+            isSuperSaiyan: false,
+            transformationTimer: 0,
+            auraParticles: [],
             
             // Animation (slower speeds)
             animationFrame: 0,
@@ -617,7 +713,10 @@
                 running: [],  // 4 frames
                 jumping: null // Single frame (run3.png)
             },
-            spritesLoaded: false
+            spritesLoaded: false,
+            
+            // Death rotation (still used for fallen state)
+            deathRotation: 0
         };
 
         // Victory system
@@ -635,6 +734,9 @@
 
         // Obstacle system
         let obstacles = [];
+        
+        // Fallen tree system for Super Saiyan mode
+        let fallenTrees = [];
 
         // Initialize the game
         window.addEventListener('load', function() {
@@ -963,6 +1065,7 @@
             console.log('🚀 Game started!');
             console.log('🎮 Controls: SPACE=Jump, ↑↓=Speed, R=Restart, M=Sound Toggle, Click=Pause');
             console.log('🌍 Watch the seasons change as you journey through time! 🌸☀️🍂❄️');
+            console.log('⚡ Lose all HP to awaken your Super Saiyan power and crush all obstacles! ⚡');
             gameRunning = true;
             scrollOffset = 0;
             gameLoop();
@@ -983,6 +1086,7 @@
             drawTimeAxis();
             drawLanguageDecorations();
             drawObstacles();
+            drawFallenTrees();
             drawVictoryFlag();
             drawDino();
             
@@ -995,14 +1099,14 @@
             // Draw damage effect overlay (should not shake)
             drawDamageEffect();
             
+            // Draw transformation effects if transforming
+            if (dino.transformationTimer > 0) {
+                drawTransformationEffect();
+            }
+            
             // Draw victory effects (should not shake)
             if (victoryEffect.active) {
                 drawVictoryEffect();
-            }
-            
-            // Draw game over screen if dead
-            if (dino.isDead) {
-                drawGameOver();
             }
             
             animationId = requestAnimationFrame(gameLoop);
@@ -1216,46 +1320,72 @@
             });
         }
 
-        function drawGameOver() {
-            // Only show after dino has fully rotated
-            if (dino.deathTimer < 60) return;
+        function drawFallenTrees() {
+            fallenTrees.forEach(tree => {
+                const treeScreenX = tree.x - scrollOffset;
+                
+                // Only draw if visible on screen
+                if (treeScreenX > -tree.width && treeScreenX < gameCanvas.width + tree.width) {
+                    const groundY = gameCanvas.height - 100;
+                    
+                    gameCtx.save();
+                    
+                    // Apply rotation and fading
+                    const alpha = tree.life / 180;
+                    gameCtx.globalAlpha = alpha;
+                    
+                    // Rotate around the base of the tree
+                    gameCtx.translate(treeScreenX, groundY);
+                    gameCtx.rotate(tree.rotation);
+                    
+                    // Draw the fallen tree (simplified version)
+                    const langInfo = getLanguageInfo(tree.language);
+                    gameCtx.fillStyle = langInfo.color || '#8B4513';
+                    gameCtx.fillRect(0, -tree.height, tree.width, tree.height);
+                    
+                    gameCtx.restore();
+                }
+            });
+        }
+
+        function drawTransformationEffect() {
+            const centerX = dino.x + dino.width / 2;
+            const centerY = dino.y + dino.height / 2;
             
-            const alpha = Math.min(1, (dino.deathTimer - 60) / 60); // Fade in over 1 second
+            // Energy rings expanding outward
+            const progress = (120 - dino.transformationTimer) / 120;
+            const ringRadius = progress * 100;
             
-            // Dark overlay
-            gameCtx.fillStyle = `rgba(0, 0, 0, ${alpha * 0.7})`;
-            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            gameCtx.strokeStyle = `rgba(255, 255, 0, ${1 - progress})`;
+            gameCtx.lineWidth = 3;
+            gameCtx.beginPath();
+            gameCtx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+            gameCtx.stroke();
             
-            // Game Over text
-            gameCtx.save();
-            gameCtx.globalAlpha = alpha;
+            // Lightning effect
+            if (dino.transformationTimer > 60) {
+                for (let i = 0; i < 5; i++) {
+                    gameCtx.strokeStyle = `rgba(255, 255, 255, ${Math.random()})`;
+                    gameCtx.lineWidth = 2;
+                    gameCtx.beginPath();
+                    const angle = (i / 5) * Math.PI * 2;
+                    const length = 30 + Math.random() * 20;
+                    gameCtx.moveTo(centerX, centerY);
+                    gameCtx.lineTo(
+                        centerX + Math.cos(angle) * length,
+                        centerY + Math.sin(angle) * length
+                    );
+                    gameCtx.stroke();
+                }
+            }
             
-            const centerX = gameCanvas.width / 2;
-            const centerY = gameCanvas.height / 2;
-            
-            // Main "GAME OVER" text
-            gameCtx.fillStyle = '#ff4757';
-            gameCtx.font = 'bold 60px Arial';
-            gameCtx.textAlign = 'center';
-            gameCtx.textBaseline = 'middle';
-            gameCtx.fillText('GAME OVER', centerX, centerY - 60);
-            
-            // Subtitle
-            gameCtx.fillStyle = '#f0f6fc';
-            gameCtx.font = 'bold 24px Arial';
-            gameCtx.fillText('Fallen in the Coding Forest 🌳⚰️', centerX, centerY - 10);
-            
-            // Restart instruction
-            gameCtx.fillStyle = '#7d8590';
-            gameCtx.font = '18px Arial';
-            gameCtx.fillText('Press R to restart your journey', centerX, centerY + 30);
-            
-            // Final HP info
-            gameCtx.fillStyle = '#ff4757';
-            gameCtx.font = '16px monospace';
-            gameCtx.fillText(`Final HP: 0/${dino.maxHp}`, centerX, centerY + 60);
-            
-            gameCtx.restore();
+            // Transformation text
+            if (dino.transformationTimer > 90) {
+                gameCtx.fillStyle = `rgba(255, 255, 0, ${(dino.transformationTimer - 90) / 30})`;
+                gameCtx.font = 'bold 24px Arial';
+                gameCtx.textAlign = 'center';
+                gameCtx.fillText('POWER AWAKENING!', centerX, centerY - 60);
+            }
         }
 
         function drawDamageEffect() {
@@ -1266,10 +1396,10 @@
         }
 
         function updateGame() {
-            // If dino is dead, only update death animation
-            if (dino.isDead) {
-                updateDeathAnimation();
-                return; // Stop all other game updates
+            // If dino is fallen, only update transformation
+            if (dino.isFallen) {
+                updateTransformation();
+                return; // Stop all other game updates during transformation
             }
             
             // If victory is active, only update victory effects
@@ -1321,12 +1451,15 @@
             
             updateDino();
             updateObstacles();
+            updateFallenTrees();
             updateScreenShake();
             checkCollisions();
             
-            // Only scroll if not dead and not victorious
-            if (!dino.isDead && !victoryEffect.active) {
-                scrollOffset += gameSpeed;
+            // Only scroll if not fallen and not victorious
+            if (!dino.isFallen && !victoryEffect.active) {
+                // Super Saiyan mode moves much faster!
+                const currentSpeed = dino.isSuperSaiyan ? gameSpeed * 2.5 : gameSpeed;
+                scrollOffset += currentSpeed;
             }
         }
 
@@ -1405,18 +1538,91 @@
             });
         }
 
-        function updateDeathAnimation() {
-            dino.deathTimer++;
+        function updateTransformation() {
+            dino.fallenTimer++;
             
-            // Rotate the dino over 60 frames (1 second)
-            if (dino.deathTimer <= 60) {
-                dino.deathRotation = (dino.deathTimer / 60) * (Math.PI / 2); // 90 degrees
+            if (dino.fallenTimer <= 180) { // 3 seconds at 60fps
+                // Fallen state - rotate and turn gray (existing animation)
+                if (dino.fallenTimer <= 60) {
+                    dino.deathRotation = (dino.fallenTimer / 60) * (Math.PI / 2); // 90 degrees
+                }
+                
+                // Make sure dino is on the ground
+                dino.y = dino.groundY;
+                dino.isJumping = false;
+                dino.jumpVelocity = 0;
+            } else if (dino.fallenTimer === 181) {
+                // Transformation moment!
+                triggerSuperSaiyanTransformation();
+            } else {
+                // Super Saiyan mode active
+                updateSuperSaiyan();
+            }
+        }
+        
+        function triggerSuperSaiyanTransformation() {
+            dino.isSuperSaiyan = true;
+            dino.transformationTimer = 120; // 2 seconds of transformation effects
+            dino.deathRotation = 0; // Stand upright
+            dino.hp = dino.maxHp; // Full HP restore
+            dino.isInvincible = true; // Permanently invincible in Super Saiyan mode
+            
+            // Play transformation sound
+            playTransformationSound();
+            
+            // Add transformation screen shake
+            addScreenShake(15, 60);
+            
+            console.log('⚡⚡ SUPER SAIYAN TRANSFORMATION! UNLIMITED POWER! ⚡⚡');
+            console.log('💨 Speed boosted! 🌳 Trees will fall before you! 🛡️ Invincible!');
+        }
+        
+        function updateSuperSaiyan() {
+            if (dino.transformationTimer > 0) {
+                dino.transformationTimer--;
             }
             
-            // Make sure dino is on the ground
-            dino.y = dino.groundY;
-            dino.isJumping = false;
-            dino.jumpVelocity = 0;
+            // Update aura particles
+            updateAuraParticles();
+            
+            // Resume normal dino physics but much faster
+            dino.isFallen = false;
+            
+            // Update dino normally
+            updateDino();
+        }
+        
+        function updateAuraParticles() {
+            // Add new aura particles
+            if (dino.isSuperSaiyan && Math.random() < 0.3) {
+                dino.auraParticles.push({
+                    x: dino.x + Math.random() * dino.width,
+                    y: dino.y + Math.random() * dino.height,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    life: 30 + Math.random() * 30,
+                    maxLife: 60
+                });
+            }
+            
+            // Update and remove old particles
+            dino.auraParticles = dino.auraParticles.filter(particle => {
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.life--;
+                return particle.life > 0;
+            });
+        }
+        
+        function updateFallenTrees() {
+            fallenTrees.forEach((tree, index) => {
+                tree.rotation += 0.05; // Continue falling
+                tree.life--;
+                
+                if (tree.life <= 0) {
+                    fallenTrees.splice(index, 1);
+                }
+            });
         }
 
         function updateObstacles() {
@@ -1441,17 +1647,17 @@
         }
 
         function checkCollisions() {
-            if (dino.isInvincible || dino.isDead) {
-                if (dino.isInvincible) {
+            if (dino.isInvincible || dino.isFallen) {
+                if (dino.isInvincible && !dino.isSuperSaiyan) {
                     dino.invincibilityTimer--;
                     if (dino.invincibilityTimer <= 0) {
                         dino.isInvincible = false;
                     }
                 }
-                return; // Skip collision checking during invincibility or death
+                return; // Skip collision checking during invincibility or fallen state
             }
             
-            obstacles.forEach(obstacle => {
+            obstacles.forEach((obstacle, obstacleIndex) => {
                 const obstacleScreenX = obstacle.x - scrollOffset;
                 
                 // Check if obstacle is near dino
@@ -1462,35 +1668,45 @@
                         dino.y < obstacle.y + obstacle.height &&
                         dino.y + dino.height > obstacle.y) {
                         
-                        // Collision detected!
-                        dino.hp = Math.max(0, dino.hp - 1);
-                        dino.isInvincible = true;
-                        dino.invincibilityTimer = 90; // 1.5 seconds of invincibility at 60fps
-                        
-                        // Play collision sound based on tree size
-                        playCollisionSound(obstacle.commits);
-                        
-                        // Add screen shake - adjust for smaller trees
-                        const baseShake = 6; // Reduced base shake for tiny trees
-                        const commitShake = Math.min(10, obstacle.commits / 15); // Scaling adjusted
-                        const totalShake = baseShake + commitShake;
-                        addScreenShake(totalShake, 25); // Slightly shorter shake duration
-                        
-                        const langInfo = getLanguageInfo(obstacle.language);
-                        const langDisplay = langInfo.icon ? `${obstacle.language} ${langInfo.icon}` : obstacle.language;
-                        
-                        // Different messages for different tree sizes
-                        if (obstacle.commits <= 3) {
-                            console.log(`🌱💥 OUCH! Tripped over ${obstacle.commits}-commit ${langDisplay} sapling! HP: ${dino.hp}/${dino.maxHp}`);
-                        } else if (obstacle.commits <= 10) {
-                            console.log(`🌿💥 BONK! Hit ${obstacle.commits}-commit ${langDisplay} small tree! HP: ${dino.hp}/${dino.maxHp}`);
+                        if (dino.isSuperSaiyan) {
+                            // Super Saiyan mode - make tree fall!
+                            makeTreeFall(obstacle, obstacleIndex);
+                            playTreeFallSound();
+                            
+                            const langInfo = getLanguageInfo(obstacle.language);
+                            const langDisplay = langInfo.icon ? `${obstacle.language} ${langInfo.icon}` : obstacle.language;
+                            console.log(`💥🌳 TIMBER! Super Saiyan knocked down ${obstacle.commits}-commit ${langDisplay} tree!`);
                         } else {
-                            console.log(`🌳💥 CRASH! Hit ${obstacle.commits}-commit ${langDisplay} tree! HP: ${dino.hp}/${dino.maxHp}`);
-                        }
-                        
-                        // Check for death
-                        if (dino.hp <= 0) {
-                            triggerDeath();
+                            // Normal mode - take damage
+                            dino.hp = Math.max(0, dino.hp - 1);
+                            dino.isInvincible = true;
+                            dino.invincibilityTimer = 90; // 1.5 seconds of invincibility at 60fps
+                            
+                            // Play collision sound based on tree size
+                            playCollisionSound(obstacle.commits);
+                            
+                            // Add screen shake - adjust for smaller trees
+                            const baseShake = 6; // Reduced base shake for tiny trees
+                            const commitShake = Math.min(10, obstacle.commits / 15); // Scaling adjusted
+                            const totalShake = baseShake + commitShake;
+                            addScreenShake(totalShake, 25); // Slightly shorter shake duration
+                            
+                            const langInfo = getLanguageInfo(obstacle.language);
+                            const langDisplay = langInfo.icon ? `${obstacle.language} ${langInfo.icon}` : obstacle.language;
+                            
+                            // Different messages for different tree sizes
+                            if (obstacle.commits <= 3) {
+                                console.log(`🌱💥 OUCH! Tripped over ${obstacle.commits}-commit ${langDisplay} sapling! HP: ${dino.hp}/${dino.maxHp}`);
+                            } else if (obstacle.commits <= 10) {
+                                console.log(`🌿💥 BONK! Hit ${obstacle.commits}-commit ${langDisplay} small tree! HP: ${dino.hp}/${dino.maxHp}`);
+                            } else {
+                                console.log(`🌳💥 CRASH! Hit ${obstacle.commits}-commit ${langDisplay} tree! HP: ${dino.hp}/${dino.maxHp}`);
+                            }
+                            
+                            // Check for transformation trigger
+                            if (dino.hp <= 0) {
+                                triggerFallen();
+                            }
                         }
                         
                         return; // Only hit one obstacle per frame
@@ -1498,25 +1714,50 @@
                 }
             });
         }
-
-        function triggerDeath() {
-            dino.isDead = true;
-            dino.deathTimer = 0;
+        
+        function makeTreeFall(obstacle, obstacleIndex) {
+            // Add to fallen trees array for animation
+            fallenTrees.push({
+                x: obstacle.x,
+                y: obstacle.y,
+                width: obstacle.width,
+                height: obstacle.height,
+                commits: obstacle.commits,
+                language: obstacle.language,
+                rotation: 0,
+                life: 180 // 3 seconds to fade out
+            });
+            
+            // Remove from obstacles array
+            obstacles.splice(obstacleIndex, 1);
+            
+            // Add impact screen shake
+            addScreenShake(12, 30);
+        }
+        
+        function triggerFallen() {
+            dino.isFallen = true;
+            dino.fallenTimer = 0;
             dino.deathRotation = 0;
             dino.isInvincible = false;
             dino.isJumping = false;
             
-            // Play death sound
-            playDeathSound();
+            // Play fallen sound
+            playFallenSound();
             
-            // Big death shake
-            addScreenShake(25, 90); // 1.5 seconds of dramatic shake
+            // Big fallen shake
+            addScreenShake(20, 60);
             
-            console.log('💀💀 GAME OVER! Dino has fallen in the coding forest... 🌳⚰️');
+            console.log('💀 Dino has fallen! But this is not the end... ⚡');
         }
 
         function updateDino() {
             dino.groundY = gameCanvas.height - 100 - dino.height;
+            
+            // Don't update physics if fallen (transformation handles movement)
+            if (dino.isFallen) {
+                return;
+            }
             
             if (dino.isJumping) {
                 dino.y += dino.jumpVelocity;
@@ -1725,47 +1966,66 @@
             try {
                 let currentSprite;
                 
-                if (dino.isJumping && !dino.isDead) {
+                if (dino.isJumping && !dino.isFallen) {
                     // Use run3.png (single jump frame)
                     currentSprite = dino.sprites.jumping;
                 } else {
-                    // Cycle through 4 running frames (or use frame 0 when dead)
-                    const frameIndex = dino.isDead ? 0 : Math.floor(dino.animationFrame / dino.runAnimationSpeed) % 4;
+                    // Cycle through 4 running frames (or use frame 0 when fallen)
+                    const frameIndex = dino.isFallen ? 0 : Math.floor(dino.animationFrame / dino.runAnimationSpeed) % 4;
                     currentSprite = dino.sprites.running[frameIndex];
                 }
                 
                 gameCtx.save();
                 
-                // Apply death effects
-                if (dino.isDead) {
+                // Draw Super Saiyan aura particles first (behind dino)
+                if (dino.isSuperSaiyan) {
+                    dino.auraParticles.forEach(particle => {
+                        const alpha = particle.life / particle.maxLife;
+                        gameCtx.fillStyle = `rgba(255, 255, 0, ${alpha * 0.8})`;
+                        gameCtx.beginPath();
+                        gameCtx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
+                        gameCtx.fill();
+                    });
+                }
+                
+                // Apply fallen/transformation effects
+                if (dino.isFallen) {
                     // Move to center of dino for rotation
                     gameCtx.translate(dino.x + dino.width/2, dino.y + dino.height/2);
                     gameCtx.rotate(dino.deathRotation);
                     
-                    // Apply grayscale filter
-                    gameCtx.filter = 'grayscale(100%) contrast(0.8)';
+                    // Apply grayscale filter during fallen state
+                    if (dino.fallenTimer <= 180) {
+                        gameCtx.filter = 'grayscale(100%) contrast(0.8)';
+                    }
                     
                     // Draw sprite centered (because we translated to center)
                     if (currentSprite && currentSprite.complete) {
                         gameCtx.drawImage(currentSprite, -dino.width/2, -dino.height/2, dino.width, dino.height);
                     } else {
                         // Fallback: draw simple rectangle if sprite fails
-                        gameCtx.fillStyle = '#666666'; // Gray for death
+                        gameCtx.fillStyle = dino.fallenTimer <= 180 ? '#666666' : '#39d353';
                         gameCtx.fillRect(-dino.width/2, -dino.height/2, dino.width, dino.height);
                     }
                 } else {
                     // Normal alive drawing
                     
-                    // Apply invincibility effect (flashing)
-                    if (dino.isInvincible && Math.floor(dino.invincibilityTimer / 10) % 2 === 0) {
+                    // Apply invincibility effect (flashing) - only in normal mode
+                    if (dino.isInvincible && !dino.isSuperSaiyan && Math.floor(dino.invincibilityTimer / 10) % 2 === 0) {
                         gameCtx.globalAlpha = 0.5; // Make dino semi-transparent when flashing
+                    }
+                    
+                    // Super Saiyan glow effect
+                    if (dino.isSuperSaiyan) {
+                        gameCtx.shadowColor = '#FFD700';
+                        gameCtx.shadowBlur = 10 + Math.sin(Date.now() * 0.01) * 5;
                     }
                     
                     if (currentSprite && currentSprite.complete) {
                         gameCtx.drawImage(currentSprite, dino.x, dino.y, dino.width, dino.height);
                     } else {
                         // Fallback: draw simple rectangle if sprite fails
-                        gameCtx.fillStyle = '#39d353';
+                        gameCtx.fillStyle = dino.isSuperSaiyan ? '#FFD700' : '#39d353';
                         gameCtx.fillRect(dino.x, dino.y, dino.width, dino.height);
                     }
                 }
@@ -1775,7 +2035,7 @@
             } catch (error) {
                 console.warn('Dino drawing error:', error);
                 // Fallback: draw simple rectangle
-                gameCtx.fillStyle = dino.isDead ? '#666666' : '#39d353';
+                gameCtx.fillStyle = dino.isFallen ? '#666666' : (dino.isSuperSaiyan ? '#FFD700' : '#39d353');
                 gameCtx.fillRect(dino.x, dino.y, dino.width, dino.height);
             }
         }
@@ -1879,7 +2139,9 @@
             // HP bar fill
             const hpPercent = dino.hp / dino.maxHp;
             let hpColor;
-            if (hpPercent > 0.6) {
+            if (dino.isSuperSaiyan) {
+                hpColor = '#FFD700'; // Golden for Super Saiyan
+            } else if (hpPercent > 0.6) {
                 hpColor = '#39d353'; // Green
             } else if (hpPercent > 0.3) {
                 hpColor = '#ffd700'; // Yellow
@@ -1888,7 +2150,18 @@
             }
             
             gameCtx.fillStyle = hpColor;
-            gameCtx.fillRect(hpX + 25, hpY, hpBarWidth * hpPercent, hpBarHeight);
+            const fillWidth = dino.isSuperSaiyan ? hpBarWidth : hpBarWidth * hpPercent;
+            gameCtx.fillRect(hpX + 25, hpY, fillWidth, hpBarHeight);
+            
+            // Add glow effect for Super Saiyan
+            if (dino.isSuperSaiyan) {
+                gameCtx.shadowColor = '#FFD700';
+                gameCtx.shadowBlur = 5;
+                gameCtx.strokeStyle = '#FFD700';
+                gameCtx.lineWidth = 2;
+                gameCtx.strokeRect(hpX + 25, hpY, hpBarWidth, hpBarHeight);
+                gameCtx.shadowBlur = 0;
+            }
             
             // HP bar border
             gameCtx.strokeStyle = '#30363d';
@@ -1899,13 +2172,15 @@
             gameCtx.fillStyle = '#f0f6fc';
             gameCtx.font = 'bold 12px monospace';
             gameCtx.textAlign = 'left';
-            gameCtx.fillText('HP', hpX, hpY + 9);
+            const hpLabel = dino.isSuperSaiyan ? '⚡SSJ' : 'HP';
+            gameCtx.fillText(hpLabel, hpX, hpY + 9);
             
-            // HP numbers
-            gameCtx.fillStyle = '#f0f6fc';
+            // HP numbers (show MAX when Super Saiyan)
+            gameCtx.fillStyle = dino.isSuperSaiyan ? '#FFD700' : '#f0f6fc';
             gameCtx.font = '10px monospace';
             gameCtx.textAlign = 'center';
-            gameCtx.fillText(`${dino.hp}/${dino.maxHp}`, hpX + 25 + hpBarWidth / 2, hpY + 8);
+            const hpText = dino.isSuperSaiyan ? '∞/∞' : `${dino.hp}/${dino.maxHp}`;
+            gameCtx.fillText(hpText, hpX + 25 + hpBarWidth / 2, hpY + 8);
             
             // Sound indicator (bottom-left)
             const soundX = 30;
@@ -2022,9 +2297,9 @@
                 if (event.code === 'Space') {
                     event.preventDefault();
                     
-                    // Can't jump when dead or victorious
-                    if (dino.isDead) {
-                        console.log('💀 Cannot jump - dino is dead! Press R to restart.');
+                    // Can't jump when fallen or victorious
+                    if (dino.isFallen) {
+                        console.log('💀 Cannot jump - dino is transforming! Wait for the power...');
                         return;
                     }
                     
@@ -2057,7 +2332,7 @@
                 
                 if (event.code === 'ArrowUp') {
                     event.preventDefault();
-                    if (!dino.isDead && !victoryEffect.active) {
+                    if (!dino.isFallen && !victoryEffect.active) {
                         gameSpeed = Math.min(3.0, gameSpeed + 0.2);
                         console.log(`⬆️ Speed increased to ${gameSpeed.toFixed(1)}`);
                     }
@@ -2065,7 +2340,7 @@
                 
                 if (event.code === 'ArrowDown') {
                     event.preventDefault();
-                    if (!dino.isDead && !victoryEffect.active) {
+                    if (!dino.isFallen && !victoryEffect.active) {
                         gameSpeed = Math.max(0.2, gameSpeed - 0.2);
                         console.log(`⬇️ Speed decreased to ${gameSpeed.toFixed(1)}`);
                     }
@@ -2073,7 +2348,7 @@
                 
                 if (event.code === 'KeyR') {
                     event.preventDefault();
-                    if (dino.isDead || victoryEffect.active) {
+                    if (victoryEffect.active) {
                         // Restart the game
                         restartGame();
                     } else {
@@ -2099,8 +2374,11 @@
             
             // Reset dino state
             dino.hp = dino.maxHp;
-            dino.isDead = false;
-            dino.deathTimer = 0;
+            dino.isFallen = false;
+            dino.fallenTimer = 0;
+            dino.isSuperSaiyan = false;
+            dino.transformationTimer = 0;
+            dino.auraParticles = [];
             dino.deathRotation = 0;
             dino.isJumping = false;
             dino.jumpVelocity = 0;
@@ -2135,12 +2413,13 @@
             screenShake = { intensity: 0, duration: 0, x: 0, y: 0 };
             damageEffect = { alpha: 0, duration: 0 };
             
-            // Reset obstacle passed states
+            // Reset obstacle and fallen tree states
             obstacles.forEach(obstacle => {
                 obstacle.passed = false;
             });
+            fallenTrees = [];
             
-            console.log('✨ Game restarted! Good luck in the coding forest! 🌳');
+            console.log('✨ Game restarted! Time to become a legend again! 🌳⚡');
         }
 
         // Click to pause/resume
