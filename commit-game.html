@@ -645,7 +645,7 @@
         let animationId = null;
         const SPEED_UNIT = 140; // slightly faster overall
         const JUMP_UNIT = 60; // match original height (~225px)
-        const JUMP_TEMPO = 1.44; // >1.0 makes jump quicker without higher apex
+        const JUMP_TEMPO = Math.pow(SPEED_UNIT / 60, 2); // align jump tempo with run speed (keeps height, shortens airtime) // >1.0 makes jump quicker without higher apex
         let lastTimestamp = null; // for time-based updates (seconds)
         let runAnimAccumulator = 0; // seconds
         const RUN_ANIM_FPS = 10; // running frames per second
